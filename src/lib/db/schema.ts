@@ -49,6 +49,7 @@ export const activitySourceEnum = pgEnum("activity_source", [
   "claude_code",
   "cron",
   "system",
+  "import",
 ]);
 export const taskStatusEnum = pgEnum("task_status", [
   "todo",

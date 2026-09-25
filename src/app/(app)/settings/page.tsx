@@ -1,19 +1,17 @@
 import type { Metadata } from "next";
 import { aiEnabled, AI_MODEL } from "@/lib/ai/client";
 import { getOwnerName } from "@/lib/data/settings";
-import { isDemoLoaded } from "@/lib/demo/seed";
 import { isLocalDb } from "@/lib/db";
 import { PageHeader } from "@/components/aurora/PageHeader";
 import { GlassCard, CardTitle } from "@/components/aurora/GlassCard";
 import { Badge } from "@/components/ui/badge";
 import { OwnerNameForm } from "@/components/settings/OwnerNameForm";
 import { ThemeChoice } from "@/components/settings/ThemeChoice";
-import { DemoDataCard } from "@/components/settings/DemoDataCard";
 
 export const metadata: Metadata = { title: "Settings" };
 
 export default async function SettingsPage() {
-  const [ownerName, demoLoaded] = await Promise.all([getOwnerName(), isDemoLoaded()]);
+  const ownerName = await getOwnerName();
   const ai = aiEnabled();
   return (
     <div className="animate-fade-up space-y-5">
@@ -27,11 +25,6 @@ export default async function SettingsPage() {
       <GlassCard>
         <CardTitle className="mb-4">Theme</CardTitle>
         <ThemeChoice />
-      </GlassCard>
-
-      <GlassCard>
-        <CardTitle className="mb-4">Demo data</CardTitle>
-        <DemoDataCard loaded={demoLoaded} />
       </GlassCard>
 
       <GlassCard>

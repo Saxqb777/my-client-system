@@ -4,7 +4,7 @@ Running memory for Orbit. Newest entries at the top of each section. Update this
 
 ## Status
 
-- Phase 1: built. Awaiting Saaqib's live review and OK.
+- Phase 1: live with Saaqib's five real clients loaded (RSA Talke, IDS DASH, ADSO TMS and Clearance, Agthia FMS, ADFH OMS). Seeded NL, EDGE and ALFOAH deleted. Design pass 2 deployed. Awaiting his next round of live feedback.
 - Phase 2: not started (tasks page, dates page, meetings and MOM, paste box, Copilot next moves).
 - Phase 3: not started (Friday pack in the 7 column format, cron, history, exports, REST API, CLAUDE commands).
 - Phase 4: not started (documents with search, /brd /qa /screens /email, Ask Orbit, style memory, PWA, polish).
@@ -12,7 +12,8 @@ Running memory for Orbit. Newest entries at the top of each section. Update this
 ## Infrastructure
 
 - GitHub: Saxqb777/my-client-system, working branch `claude/zen-volta-b254gb`.
-- Neon: project `orbit`, id `sparkling-sun-04481102`, region aws-ap-southeast-1 (Singapore), Postgres 17, database `neondb`, role `neondb_owner`. Migration 0000 applied through the Neon connector on 2026-09-24 and recorded in `drizzle.__drizzle_migrations`.
+- Neon: project `orbit`, id `sparkling-sun-04481102`, region aws-ap-southeast-1 (Singapore), Postgres 17, database `neondb`, role `neondb_owner`. Migrations 0000 (2026-09-24) and 0001 (2026-09-25, adds `import` to `activity_source`) applied through the Neon connector and recorded in `drizzle.__drizzle_migrations`.
+- Production client ids: AGTHIA a1f89eb7-2c1c-41ae-bb1f-b12d5a673ee3, ADSO bd23de59-65f3-4aaf-b804-093726a06825, IDS e8e8a7c3-637f-4b59-963b-f4a77360d584, ADFH c9afb0e5-7ebd-41c7-b4db-e6bc069b1b07, RSA a2654eab-d7f0-486c-ba16-022c52cee4fa.
 - Vercel: team `saxqb777s-projects` (Hobby plan), project `orbit`, id `prj_emds3dcDCaT7DR6JhAwPg68aIVIX`, production URL https://orbit-eta-brown.vercel.app, production branch `claude/zen-volta-b254gb`, function region sin1, Node 22. Deployment protection is Standard (previews and deployment URLs need Vercel login, the production domain does not).
 - Sandbox network note: the Claude Code cloud container cannot reach `*.neon.tech` directly (egress policy). Use the Neon connector for SQL, or ask Saaqib to allow the host in the environment's network settings.
 
@@ -30,13 +31,16 @@ Running memory for Orbit. Newest entries at the top of each section. Update this
 
 ## Decisions
 
+- 2026-09-25 Real client data loaded from five project chat exports (JSON per the data collection prompt, kept locally in `data/imports/`, git ignored). Pipeline: `src/lib/import/schema.ts` (zod) → `src/lib/import/mapProject.ts` (pure mapper) → `scripts/import-project-sql.ts` (statement batches) → Neon connector. Imported activities carry `source = import`. Saaqib asked for the data to "make sense", so the mapper applies six rules: undated activities that match a "done this week" line are dated inside this week and tagged `date approx`, otherwise dated today with the tag; a dateless finished milestone takes a date from its own note; a dateless open milestone becomes a task only if no similar task exists; a past dated "upcoming" milestone that repeats an activity is dropped; a task waiting on Saaqib is a plain to do; same day activities keep export order. Tags show in the activity feed.
+- 2026-09-25 Demo data tools removed from Settings. Real clients reuse the seed codes, and Load demo data would have overwritten them. `seedDemoData` now skips any client whose `demo_status` is false. `pnpm db:seed` stays for local PGlite only.
+- 2026-09-25 Kept as exported, flagged to Saaqib: ADFH HLD issued (17 Sep) and HLD sign off (21 Sep) stay overdue; Agthia has no UAT target date because the plan lapsed and nothing new is set; ADFH phase start shows 28 Sep (BRD session start); RSA notes hold the UAT login he supplied.
 - 2026-09-25 Design pass 2 after Saaqib's first live look. He liked the concept but the wording and the round glow blobs read as AI generated. Chosen: fonts option A (Manrope, Inter, JetBrains Mono), background option 1 (aurora curtains along the top, faint stars, dark below), calmer glass, plain copy with no mono uppercase labels and no middle dot separators. Previews of the options live in the session scratchpad only.
 - 2026-09-25 Real client list will come from Saaqib's project chats via the data collection prompt. When loaded, every seeded client not in his list is deleted.
 
 - 2026-09-24 Friday pack is generated Thursday evening Abu Dhabi time, not Friday morning. Reporting week runs Friday to Thursday (Dubai). Exact cron time to confirm with Saaqib in Phase 3 (proposal: 20:00 Dubai = 16:00 UTC Thursday, Hobby cron fires within the hour).
 - 2026-09-24 Friday table format is fixed by Saaqib: Client | Owner | Done this week | Risk / Delay | Next week action | Start date | Target date. Cells short and action oriented. Editable review grid before saving. Exports: tab separated, clean text, PDF.
 - 2026-09-24 Data model: `clients.owner`, `phase_start_date`, `phase_target_date`, `phase_target_original` support the Friday columns and slip detection. Milestones carry `original_date` and `date_history`.
-- 2026-09-24 Demo data: the eight client names are real records; their status fields and all linked rows are demo. Clear demo data keeps clients, wipes `is_demo` rows, resets `demo_status` fields.
+- 2026-09-24 Demo data: the eight client names were real records; their status fields and all linked rows were demo. Superseded on 2026-09-25 by the real import.
 - 2026-09-24 shadcn registry is blocked in the sandbox, so primitives are hand written on Radix in `src/components/ui`.
 - 2026-09-24 Local dev and tests use PGlite (`pglite://`) because Neon is unreachable from the sandbox. Production uses Neon over HTTP.
 - 2026-09-24 AI: `claude-opus-5` by default, low effort for Quick Log parsing, refusal fallbacks `default` enabled. Structured output via `zodOutputFormat`. No AI result is saved without the confirm preview.
@@ -51,7 +55,8 @@ Running memory for Orbit. Newest entries at the top of each section. Update this
 
 ## Open items
 
-- Saaqib is collecting real project data with the JSON prompt. Import each block when it arrives, then delete seeded clients not in his list.
-
+- Saaqib to review the real data live and report anything that reads wrong.
+- Saaqib asked (2026-09-25) for a plain daily task list: add tasks as they arrive during the day, tick them done or not. Think through and plan with Phase 2 (tasks page). Likely shape: a Today list on the home page and the tasks page, one line add box, checkbox toggle that stamps `completed_at`, optional client, carries unticked items to the next day.
+- Saaqib pasted his Anthropic API key in chat on 2026-09-25. Recommend rotating it and updating the Vercel env var.
 - Confirm Friday cron time (Thursday evening).
 - Phase 1 feedback after live use.

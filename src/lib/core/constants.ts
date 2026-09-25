@@ -64,6 +64,7 @@ export const ACTIVITY_SOURCES: Record<ActivitySource, string> = {
   claude_code: "Claude Code",
   cron: "Scheduled",
   system: "System",
+  import: "Imported",
 };
 
 export const TASK_STATUS: Record<TaskStatus, { label: string }> = {

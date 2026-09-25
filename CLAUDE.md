@@ -29,7 +29,7 @@ pnpm build && pnpm start
 pnpm typecheck && pnpm lint && pnpm test
 pnpm db:generate    # drizzle-kit generate after editing src/lib/db/schema.ts
 pnpm db:migrate     # applies ./drizzle to DATABASE_URL over HTTP (needs network access to Neon)
-pnpm db:seed        # loads demo data into DATABASE_URL
+pnpm db:seed        # loads demo data into a local PGlite database only, never production
 node scripts/shots.mjs   # Playwright screenshots of every page into ./shots (needs a running dev server)
 ```
 
@@ -41,7 +41,8 @@ When the sandbox cannot reach Neon directly, apply migration SQL through the Neo
 - `src/lib/db/schema.ts` full schema for all phases. `src/lib/data/*` data access. `src/actions/*` server actions (validate with zod, call data layer, `revalidatePath`).
 - `src/lib/ai/*` Claude client and Quick Log parser. `src/lib/core/*` constants, Dubai date helpers, writing style, text matching.
 - `src/components/aurora/*` design system pieces (glass cards, health orbs, countdown rings, aurora background). `src/components/ui/*` restyled primitives.
-- `src/lib/demo/seed.ts` demo data. Every demo row has `is_demo = true`; the eight clients carry `demo_status = true` so Clear demo data resets their status fields without deleting them.
+- `src/lib/import/*` project export import: zod schema, pure mapper with the data sense rules (see `docs/orbit-log.md`), and `scripts/import-project-sql.ts` which emits statement batches for the Neon connector. Client export JSON lives in `data/imports/` and is git ignored.
+- `src/lib/demo/seed.ts` demo data for local development. It never touches a client whose `demo_status` is false. Production holds real clients only.
 
 ## Conventions
 

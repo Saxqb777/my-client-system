@@ -8,11 +8,20 @@ import type {
 } from "@/lib/db/schema";
 import { PHASES } from "@/lib/core/constants";
 import { addDaysISO, formatDate } from "@/lib/core/dates";
+import { extractDates } from "@/lib/core/text";
 import type { ProjectExport } from "./schema";
 
 /**
  * Turns a project export into plain row objects for Orbit's tables.
  * Pure function: no database access, so it can feed SQL generation, the API, or tests.
+ *
+ * Rules that keep the imported data honest:
+ * 1. An undated activity that matches a "done this week" line is dated inside this week. Otherwise it is dated today. Both carry the tag "date approx".
+ * 2. A finished milestone with no date takes a date written in its own note, else rule 1, and is logged as a delivery activity.
+ * 3. An open milestone with no date becomes a task only when no similar task already exists.
+ * 4. A past dated "upcoming" milestone that repeats an activity on the same day is dropped. Real overdue items stay.
+ * 5. A task waiting on the owner is a plain to do.
+ * 6. Activities on the same day keep their export order.
  */
 
 export type MappedProject = {
@@ -40,14 +49,48 @@ export type MappedProject = {
   notes: string[];
 };
 
+export const APPROX_TAG = "date approx";
+
 const ACTIVITY_TYPES = new Set<ActivityType>(["update", "meeting", "email", "whatsapp", "call", "decision", "issue", "delivery"]);
 const MILESTONE_TYPES = new Set<MilestoneType>(["target", "sit", "uat", "go_live", "system", "other"]);
 const DOC_TYPES = new Set(["brd", "mom", "test_cases", "guide", "email", "other"]);
 const PRIORITIES = new Set<TaskPriority>(["low", "normal", "high", "urgent"]);
 
-function dubaiNoon(date: string): Date {
-  // Store day level facts at 08:00 UTC, which is midday in Abu Dhabi.
-  return new Date(`${date}T08:00:00.000Z`);
+const STOP_WORDS = new Set([
+  "the", "and", "for", "with", "from", "that", "this", "then", "than", "into", "onto", "over", "under", "about", "after", "before",
+  "are", "was", "were", "has", "have", "had", "not", "but", "per", "via", "its", "our", "their", "his", "her", "them", "they", "you",
+  "will", "would", "should", "could", "can", "any", "all", "also", "who", "whom", "which", "what", "when", "where", "how", "out",
+]);
+
+/** Lower case content words with a light stem, so "checked" and "check" or "orders" and "order" line up. */
+export function contentTokens(text: string): Set<string> {
+  const out = new Set<string>();
+  for (const raw of text.toLowerCase().split(/[^a-z0-9]+/)) {
+    if (raw.length < 3 || STOP_WORDS.has(raw)) continue;
+    let w = raw;
+    if (w.length > 5 && w.endsWith("ing")) w = w.slice(0, -3);
+    else if (w.length > 4 && w.endsWith("ied")) w = `${w.slice(0, -3)}y`;
+    else if (w.length > 4 && w.endsWith("ed")) w = w.slice(0, -2);
+    if (w.length > 3 && w.endsWith("s") && !w.endsWith("ss")) w = w.slice(0, -1);
+    out.add(w);
+  }
+  return out;
+}
+
+/** Share of the smaller token set that also appears in the other. 0 when fewer than two words are shared. */
+export function similarity(a: string, b: string): number {
+  const ta = contentTokens(a);
+  const tb = contentTokens(b);
+  if (ta.size === 0 || tb.size === 0) return 0;
+  let shared = 0;
+  for (const t of ta) if (tb.has(t)) shared++;
+  if (shared < 2) return 0;
+  return shared / Math.min(ta.size, tb.size);
+}
+
+function dubaiNoon(date: string, minuteOffset = 0): Date {
+  // Store day level facts at 08:00 UTC, which is midday in Abu Dhabi. The offset keeps export order inside a day.
+  return new Date(Date.parse(`${date}T08:00:00.000Z`) + minuteOffset * 60_000);
 }
 
 function cleanCode(code: string): string {
@@ -68,10 +111,24 @@ function mapTaskStatus(status: string | null | undefined, waitingOn: string | nu
   return "todo";
 }
 
+/** Latest date mentioned in a note that is not in the future. */
+function dateFromText(text: string | null | undefined, today: string): string | null {
+  if (!text) return null;
+  const found = extractDates(text, today).filter((f) => f.iso <= today);
+  return found.length ? found[found.length - 1].iso : null;
+}
+
+type ActivityDraft = { type: ActivityType; title: string; body: string | null; date: string | null; thisWeek: boolean; tags: string[] };
+
 export function mapProject(input: ProjectExport, today: string, codeOverride?: string): MappedProject {
   const notes: string[] = [];
   const c = input.client;
   const code = cleanCode(codeOverride ?? c.code);
+  const owner = c.owner?.trim() || "Saaqib";
+  const ownerFirst = owner.split(/\s+/)[0].toLowerCase();
+  const doneThisWeek = input.this_week?.done ?? [];
+  const matchesThisWeek = (title: string) => doneThisWeek.some((line) => similarity(title, line) >= 0.4);
+
   const noteParts = [c.notes?.trim(), c.health_reason ? `Why ${c.health === "blocked" ? "blocked" : c.health === "at_risk" ? "at risk" : "on track"}: ${c.health_reason.trim()}` : null].filter(Boolean) as string[];
 
   const client: MappedProject["client"] = {
@@ -80,7 +137,7 @@ export function mapProject(input: ProjectExport, today: string, codeOverride?: s
     fullName: c.organisation?.trim() || null,
     system: c.system?.trim() || null,
     aliases: Array.from(new Set([...(c.aliases ?? []), c.name].map((a) => a.trim()).filter((a) => a && a.toUpperCase() !== code))),
-    owner: c.owner?.trim() || "Saaqib",
+    owner,
     phase: mapPhase(c.phase),
     health: c.health ?? "on_track",
     nextStep: c.next_step?.trim() || null,
@@ -105,55 +162,17 @@ export function mapProject(input: ProjectExport, today: string, codeOverride?: s
     });
   }
 
-  const milestones: MappedProject["milestones"] = [];
-  const activities: MappedProject["activities"] = [];
+  // Tasks first, so dateless milestones can check for an existing similar task.
   const tasks: MappedProject["tasks"] = [];
-
-  for (const m of input.milestones) {
-    const type = MILESTONE_TYPES.has(m.type as MilestoneType) ? (m.type as MilestoneType) : "other";
-    const status = (["upcoming", "done", "missed", "cancelled"].includes(m.status ?? "") ? m.status : "upcoming") as MappedProject["milestones"][number]["status"];
-    const date = m.date ?? m.original_date ?? null;
-    if (!date) {
-      // No date at all: a finished item becomes a timeline entry, an open one becomes a task.
-      if (status === "done") {
-        activities.push({ type: "delivery", title: m.title.trim(), body: m.reason_for_change?.trim() || "Exact date not captured", occurredAt: dubaiNoon(today), tags: ["date approx"] });
-        notes.push(`Milestone "${m.title}" had no date and was logged as a delivery activity dated today.`);
-      } else {
-        tasks.push({ title: `${m.title.trim()}: set a date`, details: m.reason_for_change?.trim() || null, status: "todo", priority: "high", dueDate: null, waitingOn: null, waitingSince: null, completedAt: null });
-        notes.push(`Milestone "${m.title}" had no date and was added as a task to set one.`);
-      }
-      continue;
-    }
-    const original = m.original_date ?? date;
-    const history: DateChange[] = original !== date ? [{ from: original, to: date, at: dubaiNoon(today).toISOString(), reason: m.reason_for_change?.trim() || undefined }] : [];
-    milestones.push({
-      title: m.title.trim(),
-      type,
-      date,
-      originalDate: original,
-      dateHistory: history,
-      status,
-      completedAt: status === "done" ? dubaiNoon(date) : null,
-      notes: history.length === 0 && m.reason_for_change ? m.reason_for_change.trim() : null,
-    });
-  }
-
-  let lastDate: string | null = null;
-  for (const a of input.activities) {
-    const rawType = (a.type ?? "update").toLowerCase();
-    const type: ActivityType = ACTIVITY_TYPES.has(rawType as ActivityType) ? (rawType as ActivityType) : rawType === "system" ? "delivery" : "update";
-    let date = a.date ?? null;
-    const tags: string[] = [];
-    if (!date) {
-      date = lastDate ? addDaysISO(lastDate, 1) : addDaysISO(today, -30);
-      tags.push("date approx");
-    }
-    lastDate = date;
-    activities.push({ type, title: a.title.trim(), body: a.detail?.trim() || null, occurredAt: dubaiNoon(date), tags });
-  }
-
   for (const t of input.tasks) {
-    const status = mapTaskStatus(t.status, t.waiting_on);
+    let status = mapTaskStatus(t.status, t.waiting_on);
+    let waitingOn = t.waiting_on?.trim() || null;
+    if (waitingOn && contentTokens(waitingOn).has(ownerFirst)) {
+      // Rule 5: nobody waits on themselves.
+      waitingOn = null;
+      if (status === "waiting") status = "todo";
+      notes.push(`Task "${t.title}" was waiting on ${owner} and is now a plain to do.`);
+    }
     const priority = PRIORITIES.has(t.priority as TaskPriority) ? (t.priority as TaskPriority) : "normal";
     tasks.push({
       title: t.title.trim(),
@@ -161,11 +180,99 @@ export function mapProject(input: ProjectExport, today: string, codeOverride?: s
       status,
       priority,
       dueDate: t.due_date ?? null,
-      waitingOn: t.waiting_on?.trim() || null,
+      waitingOn,
       waitingSince: status === "waiting" ? (t.waiting_since ?? null) : null,
       completedAt: status === "done" ? dubaiNoon(today) : null,
     });
   }
+
+  const drafts: ActivityDraft[] = [];
+  const milestones: MappedProject["milestones"] = [];
+  const datedActivityTitles = input.activities.filter((a) => a.date).map((a) => ({ date: a.date as string, title: a.title }));
+
+  for (const m of input.milestones) {
+    const title = m.title.trim();
+    const type = MILESTONE_TYPES.has(m.type as MilestoneType) ? (m.type as MilestoneType) : "other";
+    const status = (["upcoming", "done", "missed", "cancelled"].includes(m.status ?? "") ? m.status : "upcoming") as MappedProject["milestones"][number]["status"];
+    const date = m.date ?? m.original_date ?? null;
+    const reason = m.reason_for_change?.trim() || null;
+
+    if (!date) {
+      if (status === "done") {
+        // Rule 2: a finished item with no date becomes a timeline entry.
+        const fromNote = dateFromText(reason, today);
+        drafts.push({ type: "delivery", title, body: reason ?? "Exact date not captured", date: fromNote, thisWeek: !fromNote && matchesThisWeek(title), tags: [APPROX_TAG] });
+        notes.push(`Milestone "${title}" had no date and was logged as a delivery activity${fromNote ? ` dated ${formatDate(fromNote)} from its note` : ""}.`);
+      } else {
+        // Rule 3: an open item with no date becomes a task unless one already covers it.
+        const covered = tasks.find((t) => {
+          const mt = contentTokens(title);
+          const tt = contentTokens(t.title);
+          let shared = 0;
+          for (const w of mt) if (tt.has(w)) shared++;
+          return mt.size > 0 && shared / mt.size >= 0.6;
+        });
+        if (covered) {
+          notes.push(`Milestone "${title}" had no date and is already covered by the task "${covered.title}".`);
+        } else {
+          tasks.push({ title: `${title}: set a date`, details: reason, status: "todo", priority: "high", dueDate: null, waitingOn: null, waitingSince: null, completedAt: null });
+          notes.push(`Milestone "${title}" had no date and was added as a task to set one.`);
+        }
+      }
+      continue;
+    }
+
+    if (status === "upcoming" && date < today && type === "other") {
+      // Rule 4: a past proposal that is already on the timeline is not an overdue date.
+      const twin = datedActivityTitles.find((a) => a.date === date && similarity(title, a.title) >= 0.5);
+      if (twin) {
+        notes.push(`Milestone "${title}" on ${formatDate(date)} repeats the activity "${twin.title}" and was dropped.`);
+        continue;
+      }
+    }
+
+    const original = m.original_date ?? date;
+    const history: DateChange[] = original !== date ? [{ from: original, to: date, at: dubaiNoon(today).toISOString(), reason: reason ?? undefined }] : [];
+    milestones.push({
+      title,
+      type,
+      date,
+      originalDate: original,
+      dateHistory: history,
+      status,
+      completedAt: status === "done" ? dubaiNoon(date) : null,
+      notes: history.length === 0 && reason ? reason : null,
+    });
+  }
+
+  for (const a of input.activities) {
+    const rawType = (a.type ?? "update").toLowerCase();
+    const type: ActivityType = ACTIVITY_TYPES.has(rawType as ActivityType) ? (rawType as ActivityType) : rawType === "system" ? "delivery" : "update";
+    const title = a.title.trim();
+    const date = a.date ?? null;
+    drafts.push({ type, title, body: a.detail?.trim() || null, date, thisWeek: !date && matchesThisWeek(title), tags: date ? [] : [APPROX_TAG] });
+  }
+
+  // Rule 1: undated items that happened this week are spread over the last few days in export order. Anything else lands on today.
+  const weekItems = drafts.filter((d) => !d.date && d.thisWeek);
+  weekItems.forEach((d, i) => {
+    d.date = addDaysISO(today, -Math.min(6, weekItems.length - i));
+  });
+  for (const d of drafts) {
+    if (!d.date) d.date = today;
+  }
+  if (weekItems.length) notes.push(`${weekItems.length} undated item(s) matched "done this week" and were dated inside this week.`);
+  const undatedRest = drafts.filter((d) => d.tags.includes(APPROX_TAG) && !d.thisWeek && d.date === today).length;
+  if (undatedRest) notes.push(`${undatedRest} undated item(s) had no clue to a date and were dated today.`);
+
+  // Rule 6: minute offsets keep export order inside a day.
+  const activities: MappedProject["activities"] = drafts.map((d, i) => ({
+    type: d.type,
+    title: d.title,
+    body: d.body,
+    occurredAt: dubaiNoon(d.date as string, i),
+    tags: d.tags,
+  }));
 
   const meetings: MappedProject["meetings"] = [];
   for (const m of input.meetings) {

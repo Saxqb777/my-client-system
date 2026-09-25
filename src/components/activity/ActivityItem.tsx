@@ -39,6 +39,11 @@ export function ActivityItem({
             {meta.label}
           </Badge>
           {activity.source !== "app" && <span className="text-[11px] text-faint">{ACTIVITY_SOURCES[activity.source]}</span>}
+          {activity.tags.map((tag) => (
+            <span key={tag} className="text-[11px] text-faint">
+              {tag}
+            </span>
+          ))}
           {activity.isDemo && <span className="text-[10px] uppercase tracking-wider text-faint">demo</span>}
         </div>
         <p className={cn("mt-1 text-text", compact ? "text-[13px]" : "text-sm")}>{activity.title}</p>

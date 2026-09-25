@@ -308,11 +308,12 @@ function at(daysAgo: number, hour = 10 + (daysAgo % 6)): Date {
   return d;
 }
 
-export async function seedDemoData(): Promise<{ inserted: number }> {
+export async function seedDemoData(): Promise<{ inserted: number; skipped: string[] }> {
   const db = await getDb();
   const today = todayISO();
   const day = (offset: number) => addDaysISO(today, offset);
   let inserted = 0;
+  const skipped: string[] = [];
 
   const existing = await db.query.clients.findMany({ where: inArray(clients.code, CODES) });
   const byCode = new Map(existing.map((c) => [c.code, c]));
@@ -337,6 +338,11 @@ export async function seedDemoData(): Promise<{ inserted: number }> {
       archivedAt: null,
     };
     let client = byCode.get(s.code);
+    if (client && !client.demoStatus) {
+      // A real client already uses this code. Demo data never touches real work.
+      skipped.push(s.code);
+      continue;
+    }
     if (!client) {
       [client] = await db.insert(clients).values(values).returning();
       inserted++;
@@ -420,8 +426,9 @@ export async function seedDemoData(): Promise<{ inserted: number }> {
     }
   }
 
+  if (skipped.length) console.warn(`Demo data skipped real clients: ${skipped.join(", ")}`);
   await setSetting(SETTINGS_KEYS.demoSeededAt, new Date().toISOString());
-  return { inserted };
+  return { inserted, skipped };
 }
 
 export async function clearDemoData(): Promise<{ removed: number }> {

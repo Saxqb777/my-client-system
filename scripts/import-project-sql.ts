@@ -44,7 +44,7 @@ for (const spec of specs) {
   for (const t of m.tasks) head.push(`INSERT INTO tasks (client_id,title,details,status,priority,due_date,waiting_on,waiting_since,completed_at,is_demo) VALUES (${cid},${lit(t.title)},${lit(t.details)},${lit(t.status)},${lit(t.priority)},${lit(t.dueDate)},${lit(t.waitingOn)},${lit(t.waitingSince)},${lit(t.completedAt)},false)`);
 
   const tail: string[] = [];
-  for (const a of m.activities) tail.push(`INSERT INTO activities (client_id,type,title,body,occurred_at,source,tags,is_demo) VALUES (${cid},${lit(a.type)},${lit(a.title)},${lit(a.body)},${lit(a.occurredAt)},'paste',${textArr(a.tags)},false)`);
+  for (const a of m.activities) tail.push(`INSERT INTO activities (client_id,type,title,body,occurred_at,source,tags,is_demo) VALUES (${cid},${lit(a.type)},${lit(a.title)},${lit(a.body)},${lit(a.occurredAt)},'import',${textArr(a.tags)},false)`);
   for (const mt of m.meetings) tail.push(`INSERT INTO meetings (client_id,title,held_at,attendees,mom,action_items,is_demo) VALUES (${cid},${lit(mt.title)},${lit(mt.heldAt)},${jsonb(mt.attendees)},${lit(mt.mom)},${jsonb(mt.actionItems)},false)`);
   for (const d of m.documents) tail.push(`INSERT INTO documents (client_id,type,title,content,tags,is_demo) VALUES (${cid},${lit(d.type)},${lit(d.title)},${lit(d.content)},${textArr(d.tags)},false)`);
 
