@@ -1,6 +1,6 @@
 import { and, asc, count, desc, eq, gte, inArray, isNull, max, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { activities, clients, meetings, milestones, people, tasks, type Client, type Milestone } from "@/lib/db/schema";
+import { activities, clients, documents, meetings, milestones, people, tasks, type Client, type Milestone } from "@/lib/db/schema";
 import { CLIENT_HUES, HEALTH, phaseLabel } from "@/lib/core/constants";
 import { formatDate, todayISO } from "@/lib/core/dates";
 import type { ClientInput, ClientPatch } from "@/lib/validation";
@@ -88,6 +88,7 @@ export async function getClient(id: string) {
       tasks: { orderBy: [asc(tasks.dueDate), desc(tasks.createdAt)] },
       activities: { orderBy: [desc(activities.occurredAt)], limit: 80 },
       meetings: { orderBy: [desc(meetings.heldAt)] },
+      documents: { orderBy: [desc(documents.createdAt)] },
     },
   });
 }

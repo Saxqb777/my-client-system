@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getClient } from "@/lib/data/clients";
 import { nowMs } from "@/lib/core/dates";
-import { EmptyState } from "@/components/aurora/EmptyState";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientHeader } from "@/components/clients/ClientHeader";
 import { ClientTimeline } from "@/components/clients/ClientTimeline";
@@ -12,6 +11,7 @@ import { MilestonesPanel } from "@/components/clients/MilestonesPanel";
 import { TasksPanel } from "@/components/clients/TasksPanel";
 import { PeoplePanel } from "@/components/clients/PeoplePanel";
 import { NotesPanel } from "@/components/clients/NotesPanel";
+import { DocumentsPanel } from "@/components/clients/DocumentsPanel";
 import { MeetingsPanel } from "@/components/meetings/MeetingsPanel";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -63,7 +63,9 @@ export default async function ClientPage({ params, searchParams }: Props) {
             People <Count n={client.people.length} />
           </TabsTrigger>
           <TabsTrigger value="notes">Notes</TabsTrigger>
-          <TabsTrigger value="docs">Docs</TabsTrigger>
+          <TabsTrigger value="docs">
+            Docs <Count n={client.documents.length} />
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="timeline">
           <ClientTimeline clientId={client.id} clientCode={client.code} activities={client.activities} />
@@ -84,7 +86,7 @@ export default async function ClientPage({ params, searchParams }: Props) {
           <NotesPanel clientId={client.id} notes={client.notes} momFormat={client.momFormat} />
         </TabsContent>
         <TabsContent value="docs">
-          <EmptyState title="Documents arrive in Phase 4" hint="BRDs, MOMs, test cases and guides will live here with full text search." compact />
+          <DocumentsPanel documents={client.documents} />
         </TabsContent>
       </Tabs>
     </div>
