@@ -72,6 +72,7 @@ const SYSTEM_PROMPT = [
   "Client updates: set health only when the text clearly says blocked, at risk, delayed, or back on track. Set phase only when the text says the project entered a phase (for example UAT started, went live). Set nextStep only when the text states what happens next.",
   "Milestones: when the text gives or moves a date for go live, UAT, SIT, a target, a system date or a named milestone, add a milestoneUpdates entry with the new date. When it says a milestone is signed off, completed or done, set markDone true.",
   "Tasks: create a task for follow ups, reminders, things to send or prepare, and anything Saaqib is waiting on from someone (waitingOn holds the person or client). Do not create tasks for things already done.",
+  "Pasted threads: the text may be a whole email chain or WhatsApp conversation with several messages and people. Read all of it. The one activity summarises the outcome of the thread as of its latest message; put the useful detail in body. Still extract every task, date change and status change the thread supports, and prefer the most recent statement when messages disagree.",
   "Dates: resolve relative dates such as tomorrow, next Monday or 15 Oct using the provided today date and yyyy-MM-dd format. Years default to the nearest upcoming occurrence.",
   `Writing style for every title and text you output: ${WRITING_STYLE_RULES}`,
 ].join("\n");

@@ -11,7 +11,7 @@ import { todayISO } from "@/lib/core/dates";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const Body = z.object({ text: z.string().trim().min(2, "Write a little more").max(4000) });
+const Body = z.object({ text: z.string().trim().min(2, "Write a little more").max(30000, "Trim the paste to the part that matters") });
 
 export async function POST(req: Request) {
   if (!(await apiPrincipal())) return unauthorized();

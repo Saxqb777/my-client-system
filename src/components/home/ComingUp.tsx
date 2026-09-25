@@ -8,7 +8,14 @@ import { Panel } from "@/components/aurora/Panel";
 export function ComingUp({ upcoming, overdue }: { upcoming: MilestoneWithClient[]; overdue: MilestoneWithClient[] }) {
   const rows = [...overdue, ...upcoming].slice(0, 9);
   return (
-    <Panel title="Coming up" aside={`${upcoming.length} ${upcoming.length === 1 ? "date" : "dates"} in 45 days`}>
+    <Panel
+      title="Coming up"
+      aside={
+        <Link href="/dates" className="link">
+          All dates
+        </Link>
+      }
+    >
       {rows.length === 0 ? (
         <p className="py-3 text-[14px] text-muted">No dates in the next 45 days.</p>
       ) : (

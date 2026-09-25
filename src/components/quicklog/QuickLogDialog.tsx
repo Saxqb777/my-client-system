@@ -130,7 +130,7 @@ export function QuickLogDialog({
             <DialogDescription>
               {stage === "preview"
                 ? "Review, edit if needed, then save."
-                : "Type an update. Orbit finds the client, logs it, moves dates and adds follow ups."}
+                : "Type an update, or paste a whole email or WhatsApp thread. Orbit finds the client, logs it, moves dates and adds follow ups."}
             </DialogDescription>
           </DialogHeader>
 
@@ -145,12 +145,12 @@ export function QuickLogDialog({
                   onKeyDown={(e) => {
                     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") parse(text);
                   }}
-                  placeholder="ADFH UAT signed off, go live moved to 15 Oct. Waiting on Noura for the integration list."
-                  className="min-h-[120px] text-[15px]"
+                  placeholder="ADFH UAT signed off, go live moved to 15 Oct. Waiting on Noura for the integration list. Or paste the thread."
+                  className="max-h-[50dvh] min-h-[140px] text-[15px]"
                 />
                 {error && <p className="text-sm text-bad">{error}</p>}
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs text-muted">⌘ Enter to continue</p>
+                  <p className="text-xs text-muted">⌘ Enter to continue{text.length > 600 ? `. ${text.length.toLocaleString()} characters` : ""}</p>
                   <Button onClick={() => parse(text)} disabled={text.trim().length < 2}>
                     <Wand2 /> Understand
                   </Button>

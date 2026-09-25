@@ -19,7 +19,7 @@ function Item({ item, pathname }: { item: (typeof NAV)[number]; pathname: string
 export function MobileNav() {
   const pathname = usePathname();
   const quickLog = useQuickLog();
-  const [home, tasks, clients, activity] = NAV;
+  const [home, tasks, , clients, activity] = NAV;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-bg lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
