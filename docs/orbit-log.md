@@ -56,7 +56,7 @@ Running memory for Orbit. Newest entries at the top of each section. Update this
 ## Open items
 
 - Saaqib to review the real data live and report anything that reads wrong.
-- Saaqib asked (2026-09-25) for a plain daily task list: add tasks as they arrive during the day, tick them done or not. Think through and plan with Phase 2 (tasks page). Likely shape: a Today list on the home page and the tasks page, one line add box, checkbox toggle that stamps `completed_at`, optional client, carries unticked items to the next day.
+- Saaqib asked (2026-09-25) for a plain daily task list: add tasks as they arrive during the day, tick them done or not. Think through and plan with Phase 2 (tasks page). Likely shape: a Today list on the home page and the tasks page, one line add box, checkbox toggle that stamps `completed_at`, optional client, carries unticked items to the next day. Saaqib added that the current per client task panel "can be more advanced": treat the Phase 2 tasks page as a proper work list, not a checkbox list. Candidates: due dates and times, priority, waiting on with days waiting, quick add by typing "ADSO call Mohamad 3pm", drag to reorder, done today count, overdue carry over, link to the activity that created the task, keyboard first.
 - Saaqib pasted his Anthropic API key in chat on 2026-09-25. Recommend rotating it and updating the Vercel env var.
 - Confirm Friday cron time (Thursday evening).
 - Phase 1 feedback after live use.
