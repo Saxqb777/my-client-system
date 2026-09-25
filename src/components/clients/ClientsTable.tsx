@@ -33,7 +33,15 @@ export function ClientsTable({ clients, title, aside, emptyTitle = "No clients",
           {clients.map((c) => {
             const next = c.nextMilestone;
             return (
-              <tr key={c.id} className="cursor-pointer" onClick={() => router.push(`/clients/${c.id}`)}>
+              <tr
+                key={c.id}
+                className="cursor-pointer outline-none focus-visible:bg-surface-2"
+                tabIndex={0}
+                onClick={() => router.push(`/clients/${c.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") router.push(`/clients/${c.id}`);
+                }}
+              >
                 <td>
                   <p className="serif text-[19px] leading-tight text-text">{c.name}</p>
                   <p className="mt-0.5 text-[12px] text-muted">
