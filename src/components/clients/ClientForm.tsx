@@ -169,7 +169,7 @@ export function ClientForm({ open, onOpenChange, client }: { open: boolean; onOp
                   aria-label={`Hue ${h}`}
                   onClick={() => set("color", String(h))}
                   className={cn(
-                    "size-7 rounded-full border-2 transition",
+                    "size-7 rounded-[3px] border-2 transition",
                     form.color === String(h) ? "scale-110 border-text" : "border-transparent hover:scale-105",
                   )}
                   style={{ background: `hsl(${h} 80% 60%)` }}
@@ -202,7 +202,7 @@ function Field({ label, hint, required, children }: { label: string; hint?: stri
     <div className="space-y-1.5">
       <Label>
         {label}
-        {required && <span className="text-teal"> *</span>}
+        {required && <span className="text-signal"> *</span>}
       </Label>
       {children}
       {hint && <p className="text-[11px] text-muted">{hint}</p>}

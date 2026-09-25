@@ -8,16 +8,10 @@ import { Button } from "@/components/ui/button";
 export function ThemeToggle({ className }: { className?: string }) {
   const { resolvedTheme, setTheme } = useTheme();
   const mounted = useMounted();
-  const dark = mounted ? resolvedTheme !== "light" : true;
+  const dark = mounted ? resolvedTheme === "dark" : false;
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className={className}
-      aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
-      onClick={() => setTheme(dark ? "light" : "dark")}
-    >
-      {dark ? <Sun /> : <Moon />}
+    <Button variant="ghost" size="icon-sm" className={className} aria-label={dark ? "Switch to light" : "Switch to dark"} onClick={() => setTheme(dark ? "light" : "dark")}>
+      {dark ? <Sun className="size-4" /> : <Moon className="size-4" />}
     </Button>
   );
 }

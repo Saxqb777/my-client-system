@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { ArrowLeft, Bot, Check, Loader2, Plus, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { ArrowLeft, Bot, Check, Loader2, PenLine, Plus, Trash2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import type { NavClient } from "@/components/shell/nav";
 import type { ParseResult, QuickLogPlan } from "@/lib/ai/quicklog";
@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { HealthOrb } from "@/components/aurora/HealthOrb";
+import { HealthSwatch } from "@/components/aurora/HealthMark";
 import { cn } from "@/lib/utils";
 
 type Seed = { text: string; autoParse: boolean; nonce: number };
@@ -109,7 +109,7 @@ export function QuickLogDialog({
       }
       toast.success(`Saved to ${res.data.client.name}`, {
         description: res.data.lines.slice(0, 4).join(", "),
-        icon: <Check className="size-4 text-teal" />,
+        icon: <Check className="size-4 text-ok" />,
       });
       onOpenChange(false);
       router.refresh();
@@ -124,7 +124,7 @@ export function QuickLogDialog({
         <div className="p-6">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="size-5 text-teal" />
+              <PenLine className="size-5 text-text" />
               Quick log
             </DialogTitle>
             <DialogDescription>
@@ -161,8 +161,8 @@ export function QuickLogDialog({
             {stage === "parsing" && (
               <motion.div key="parsing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-6 flex flex-col items-center gap-3 py-10 text-center">
                 <span className="relative flex size-12 items-center justify-center">
-                  <span className="absolute inset-0 animate-ping rounded-full bg-teal/20" />
-                  <Loader2 className="size-6 animate-spin text-teal" />
+                  
+                  <Loader2 className="size-6 animate-spin text-text" />
                 </span>
                 <p className="text-sm text-text-2">Reading the update</p>
                 <p className="max-w-sm text-xs text-muted">“{text}”</p>
@@ -171,10 +171,10 @@ export function QuickLogDialog({
 
             {stage === "preview" && plan && result && (
               <motion.div key="preview" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} className="mt-5 space-y-5">
-                <blockquote className="rounded-[12px] border border-border bg-surface px-3.5 py-2.5 text-sm text-text-2">“{text}”</blockquote>
+                <blockquote className="rounded-[4px] border border-border px-3.5 py-2.5 text-sm text-text-2">“{text}”</blockquote>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge tone={result.engine === "claude" ? "violet" : "neutral"}>
+                  <Badge tone={result.engine === "claude" ? "ink" : "neutral"}>
                     <Bot className="size-3" /> {result.engine === "claude" ? "Read by Claude" : "Read by rules"}
                   </Badge>
                   {!result.aiConfigured && <span className="text-xs text-muted">Add ANTHROPIC_API_KEY to use Claude.</span>}
@@ -190,7 +190,7 @@ export function QuickLogDialog({
                       {clients.map((c) => (
                         <SelectItem key={c.id} value={c.id}>
                           <span className="inline-flex items-center gap-2">
-                            <HealthOrb health={c.health} pulse={false} /> {c.name} <span className="num text-xs text-muted">{c.code}</span>
+                            <HealthSwatch health={c.health} /> {c.name} <span className="num text-xs text-muted">{c.code}</span>
                           </span>
                         </SelectItem>
                       ))}
@@ -270,7 +270,7 @@ export function QuickLogDialog({
                   {plan.milestoneUpdates.length === 0 && <p className="text-sm text-muted">No date changes.</p>}
                   <div className="space-y-2">
                     {plan.milestoneUpdates.map((m, i) => (
-                      <div key={i} className="grid items-center gap-2 rounded-[12px] border border-border bg-surface p-2 sm:grid-cols-[120px_1fr_150px_auto_auto]">
+                      <div key={i} className="grid items-center gap-2 rounded-[4px] border border-border p-2 sm:grid-cols-[120px_1fr_150px_auto_auto]">
                         <Select value={m.type} onValueChange={(v) => update({ milestoneUpdates: plan.milestoneUpdates.map((x, j) => (j === i ? { ...x, type: v as typeof m.type } : x)) })}>
                           <SelectTrigger className="h-9">
                             <SelectValue />
@@ -308,7 +308,7 @@ export function QuickLogDialog({
                   {plan.tasks.length === 0 && <p className="text-sm text-muted">No follow ups.</p>}
                   <div className="space-y-2">
                     {plan.tasks.map((t, i) => (
-                      <div key={i} className="grid items-center gap-2 rounded-[12px] border border-border bg-surface p-2 sm:grid-cols-[1fr_140px_150px_110px_auto]">
+                      <div key={i} className="grid items-center gap-2 rounded-[4px] border border-border p-2 sm:grid-cols-[1fr_140px_150px_110px_auto]">
                         <Input className="h-9" placeholder="What needs doing" value={t.title} onChange={(e) => update({ tasks: plan.tasks.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)) })} />
                         <Input className="h-9" placeholder="Waiting on" value={t.waitingOn ?? ""} onChange={(e) => update({ tasks: plan.tasks.map((x, j) => (j === i ? { ...x, waitingOn: e.target.value || null } : x)) })} />
                         <Input className="h-9" type="date" value={t.dueDate ?? ""} onChange={(e) => update({ tasks: plan.tasks.map((x, j) => (j === i ? { ...x, dueDate: e.target.value || null } : x)) })} />
@@ -333,7 +333,7 @@ export function QuickLogDialog({
                 </Section>
 
                 {plan.notes && (
-                  <p className="rounded-[12px] border border-[color-mix(in_oklab,var(--warn)_35%,transparent)] bg-[color-mix(in_oklab,var(--warn)_8%,transparent)] px-3 py-2 text-sm text-warn">
+                  <p className="rounded-[4px] border border-[color-mix(in_oklab,var(--warn)_35%,transparent)] bg-[color-mix(in_oklab,var(--warn)_8%,transparent)] px-3 py-2 text-sm text-warn">
                     {plan.notes}
                   </p>
                 )}

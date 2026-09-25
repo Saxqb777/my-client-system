@@ -37,15 +37,15 @@ export function TaskRow({ task, client, showClient = true, compact }: { task: Ta
   }
 
   return (
-    <li className={cn("group flex items-start gap-3", compact ? "py-2" : "py-2.5")}>
+    <li className={cn("group flex items-start gap-3 border-b border-border last:border-0", compact ? "py-2" : "py-2.5")}>
       <button
         type="button"
         onClick={() => setStatus(done ? "todo" : "done")}
         disabled={pending}
         aria-label={done ? "Reopen task" : "Mark done"}
         className={cn(
-          "relative mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border transition",
-          done ? "border-teal bg-teal text-accent-ink" : "border-border-strong hover:border-teal",
+          "relative mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-[3px] border transition",
+          done ? "border-ink bg-ink text-paper" : "border-border-strong hover:border-ink",
         )}
       >
         {done && (
@@ -53,19 +53,19 @@ export function TaskRow({ task, client, showClient = true, compact }: { task: Ta
             <Check className="size-3" strokeWidth={3} />
           </motion.span>
         )}
-        {justDone && <motion.span className="absolute inset-0 rounded-full border-2 border-teal" initial={{ scale: 1, opacity: 0.8 }} animate={{ scale: 2.2, opacity: 0 }} transition={{ duration: 0.6 }} />}
+        
       </button>
       <div className="min-w-0 flex-1">
-        <p className={cn("text-sm", done ? "text-muted line-through" : "text-text")}>{task.title}</p>
+        <p className={cn("text-[14px]", done ? "text-muted line-through" : "text-text")}>{task.title}</p>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
           {showClient && client && (
-            <Link href={`/clients/${client.id}`} className="num font-medium text-teal hover:underline">
+            <Link href={`/clients/${client.id}`} className="num text-text-2 hover:underline">
               {client.code}
             </Link>
           )}
-          {task.status === "in_progress" && !done && <span className="pill pill-violet !py-0 !text-[11px]">In progress</span>}
+          {task.status === "in_progress" && !done && <span className="tag tag-info">In progress</span>}
           {task.status === "waiting" && !done && (
-            <span className="pill pill-warn !py-0 !text-[11px]">
+            <span className="tag tag-warn">
               <Hourglass className="size-3" /> Waiting on {task.waitingOn ?? "someone"}
               {waitingDays !== null && waitingDays > 0 ? `, ${waitingDays} ${waitingDays === 1 ? "day" : "days"}` : ""}
             </span>

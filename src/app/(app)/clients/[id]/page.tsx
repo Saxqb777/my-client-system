@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { getClient } from "@/lib/data/clients";
-import { GlassCard } from "@/components/aurora/GlassCard";
 import { EmptyState } from "@/components/aurora/EmptyState";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientHeader } from "@/components/clients/ClientHeader";
@@ -35,44 +34,42 @@ export default async function ClientPage({ params, searchParams }: Props) {
   const tab = typeof sp.tab === "string" ? sp.tab : "timeline";
 
   return (
-    <div className="animate-fade-up space-y-5">
-      <Link href="/clients" className="inline-flex items-center gap-1 text-sm text-muted hover:text-text">
-        <ArrowLeft className="size-4" /> Clients
+    <div className="animate-fade-up space-y-7">
+      <Link href="/clients" className="inline-flex items-center gap-1 text-[13px] text-muted hover:text-text">
+        <ArrowLeft className="size-3.5" /> Clients
       </Link>
       <ClientHeader client={client} />
 
       <Tabs defaultValue={tab}>
         <TabsList>
-          <TabsTrigger value="timeline">Timeline <Count n={client.activities.length} /></TabsTrigger>
-          <TabsTrigger value="dates">Dates <Count n={upcoming} /></TabsTrigger>
-          <TabsTrigger value="tasks">Tasks <Count n={openTasks} /></TabsTrigger>
-          <TabsTrigger value="people">People <Count n={client.people.length} /></TabsTrigger>
+          <TabsTrigger value="timeline">
+            Timeline <Count n={client.activities.length} />
+          </TabsTrigger>
+          <TabsTrigger value="dates">
+            Dates <Count n={upcoming} />
+          </TabsTrigger>
+          <TabsTrigger value="tasks">
+            Tasks <Count n={openTasks} />
+          </TabsTrigger>
+          <TabsTrigger value="people">
+            People <Count n={client.people.length} />
+          </TabsTrigger>
           <TabsTrigger value="docs">Docs</TabsTrigger>
         </TabsList>
         <TabsContent value="timeline">
-          <GlassCard>
-            <ClientTimeline clientId={client.id} clientCode={client.code} activities={client.activities} />
-          </GlassCard>
+          <ClientTimeline clientId={client.id} clientCode={client.code} activities={client.activities} />
         </TabsContent>
         <TabsContent value="dates">
-          <GlassCard>
-            <MilestonesPanel clientId={client.id} milestones={client.milestones} />
-          </GlassCard>
+          <MilestonesPanel clientId={client.id} milestones={client.milestones} />
         </TabsContent>
         <TabsContent value="tasks">
-          <GlassCard>
-            <TasksPanel clientId={client.id} tasks={client.tasks} />
-          </GlassCard>
+          <TasksPanel clientId={client.id} tasks={client.tasks} />
         </TabsContent>
         <TabsContent value="people">
-          <GlassCard>
-            <PeoplePanel clientId={client.id} people={client.people} />
-          </GlassCard>
+          <PeoplePanel clientId={client.id} people={client.people} />
         </TabsContent>
         <TabsContent value="docs">
-          <GlassCard>
-            <EmptyState title="Documents arrive in Phase 4" hint="BRDs, MOMs, test cases and guides will live here with full text search." action={<FileText className="size-5 text-muted" />} />
-          </GlassCard>
+          <EmptyState title="Documents arrive in Phase 4" hint="BRDs, MOMs, test cases and guides will live here with full text search." compact />
         </TabsContent>
       </Tabs>
     </div>
@@ -80,5 +77,5 @@ export default async function ClientPage({ params, searchParams }: Props) {
 }
 
 function Count({ n }: { n: number }) {
-  return <span className="num rounded-full bg-surface-3 px-1.5 text-[10px] text-muted">{n}</span>;
+  return <span className="num text-[12px] text-muted">{n}</span>;
 }

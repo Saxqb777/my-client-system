@@ -14,7 +14,6 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/aurora/EmptyState";
 
 type Form = { name: string; role: string; side: Person["side"]; email: string; phone: string; isPrimary: boolean };
@@ -59,27 +58,27 @@ export function PeoplePanel({ clientId, people }: { clientId: string; people: Pe
       {people.length === 0 ? (
         <EmptyState title="No people yet" hint="Add the key contacts: sponsor, IT lead, vendor PM." compact />
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid sm:grid-cols-2 sm:gap-x-10">
           {people.map((p) => (
-            <li key={p.id} className="glass-inset flex items-start gap-3 p-3.5">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--violet),var(--magenta))] text-xs font-semibold text-white">{initials(p.name)}</span>
+            <li key={p.id} className="flex items-start gap-3 border-b border-border py-3">
+              <span className="num flex size-9 shrink-0 items-center justify-center rounded-[3px] border border-border-strong text-[11px] text-text-2">{initials(p.name)}</span>
               <div className="min-w-0 flex-1">
-                <p className="flex items-center gap-1.5 text-sm font-medium">
+                <p className="flex items-center gap-1.5 text-[14px] text-text">
                   {p.name}
                   {p.isPrimary && <Star className="size-3.5 fill-warn text-warn" />}
                 </p>
                 <p className="flex items-center gap-2 text-xs text-muted">
                   <span>{p.role || "Role not set"}</span>
-                  <Badge className="!py-0 !text-[10px]">{p.side}</Badge>
+                  <span>{p.side}</span>
                 </p>
                 <div className="mt-1.5 flex flex-wrap gap-3 text-[12px]">
                   {p.email && (
-                    <a href={`mailto:${p.email}`} className="inline-flex items-center gap-1 text-teal hover:underline">
+                    <a href={`mailto:${p.email}`} className="link inline-flex items-center gap-1">
                       <Mail className="size-3" /> {p.email}
                     </a>
                   )}
                   {p.phone && (
-                    <a href={`https://wa.me/${p.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-teal hover:underline">
+                    <a href={`https://wa.me/${p.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="link inline-flex items-center gap-1">
                       <Phone className="size-3" /> {p.phone}
                     </a>
                   )}

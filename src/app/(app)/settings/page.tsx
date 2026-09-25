@@ -3,7 +3,7 @@ import { aiEnabled, AI_MODEL } from "@/lib/ai/client";
 import { getOwnerName } from "@/lib/data/settings";
 import { isLocalDb } from "@/lib/db";
 import { PageHeader } from "@/components/aurora/PageHeader";
-import { GlassCard, CardTitle } from "@/components/aurora/GlassCard";
+import { Panel } from "@/components/aurora/Panel";
 import { Badge } from "@/components/ui/badge";
 import { OwnerNameForm } from "@/components/settings/OwnerNameForm";
 import { ThemeChoice } from "@/components/settings/ThemeChoice";
@@ -14,22 +14,19 @@ export default async function SettingsPage() {
   const ownerName = await getOwnerName();
   const ai = aiEnabled();
   return (
-    <div className="animate-fade-up space-y-5">
+    <div className="animate-fade-up space-y-10">
       <PageHeader title="Settings" />
 
-      <GlassCard>
-        <CardTitle className="mb-4">Profile</CardTitle>
+      <Panel title="Profile">
         <OwnerNameForm initial={ownerName} />
-      </GlassCard>
+      </Panel>
 
-      <GlassCard>
-        <CardTitle className="mb-4">Theme</CardTitle>
+      <Panel title="Theme">
         <ThemeChoice />
-      </GlassCard>
+      </Panel>
 
-      <GlassCard>
-        <CardTitle className="mb-4">Connections</CardTitle>
-        <ul className="divide-y divide-border/60 text-sm">
+      <Panel title="Connections">
+        <ul className="text-[14px]">
           <Row label="Claude" status={ai ? <Badge tone="ok">Connected</Badge> : <Badge tone="warn">Not set</Badge>}>
             {ai ? `Quick Log parsing uses ${AI_MODEL}.` : "Add ANTHROPIC_API_KEY in Vercel to turn on Claude parsing. Until then Orbit uses rules."}
           </Row>
@@ -40,15 +37,15 @@ export default async function SettingsPage() {
             Token access and Claude Code commands come in Phase 3.
           </Row>
         </ul>
-      </GlassCard>
+      </Panel>
     </div>
   );
 }
 
 function Row({ label, status, children }: { label: string; status: React.ReactNode; children: React.ReactNode }) {
   return (
-    <li className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:gap-4">
-      <span className="w-28 shrink-0 font-medium">{label}</span>
+    <li className="flex flex-col gap-1 border-b border-border py-3 last:border-0 sm:flex-row sm:items-center sm:gap-4">
+      <span className="w-28 shrink-0 text-text">{label}</span>
       <span className="flex-1 text-muted">{children}</span>
       {status}
     </li>

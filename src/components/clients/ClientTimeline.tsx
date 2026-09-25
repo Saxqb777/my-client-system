@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Send, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Activity, ActivityType } from "@/lib/db/schema";
 import { logActivityAction } from "@/actions/activities";
@@ -35,12 +35,12 @@ export function ClientTimeline({ clientId, clientCode, activities }: { clientId:
 
   return (
     <div className="space-y-5">
-      <div className="glass-inset p-3">
+      <div className="rounded-[4px] border border-border-strong p-3">
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Log an update"
-          className="min-h-[64px] border-0 bg-transparent px-1 focus:shadow-none"
+          className="min-h-[64px] border-0 bg-transparent px-1 focus:shadow-none focus:border-0"
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter") submit();
           }}
@@ -60,10 +60,10 @@ export function ClientTimeline({ clientId, clientCode, activities }: { clientId:
           </Select>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => quickLog.open(text ? `${clientCode} ${text}` : `${clientCode} `)} title="Use Quick Log to also move dates and add follow ups">
-              <Sparkles className="text-teal" /> Smart log
+              Smart log
             </Button>
             <Button size="sm" onClick={submit} disabled={pending || text.trim().length < 2}>
-              {pending ? <Loader2 className="animate-spin" /> : <Send />} Log
+              {pending && <Loader2 className="animate-spin" />} Log
             </Button>
           </div>
         </div>

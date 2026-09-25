@@ -42,7 +42,7 @@ export function TasksPanel({ clientId, tasks }: { clientId: string; tasks: Task[
 
   return (
     <div className="space-y-5">
-      <div className="glass-inset p-3">
+      <div className="rounded-[4px] border border-border-strong p-3">
         <div className="flex gap-2">
           <Input
             value={title}
@@ -51,7 +51,7 @@ export function TasksPanel({ clientId, tasks }: { clientId: string; tasks: Task[
             className="h-10 border-0 bg-transparent px-1 focus:shadow-none"
             onKeyDown={(e) => e.key === "Enter" && add()}
           />
-          <Button variant="ghost" size="icon" onClick={() => setMore((v) => !v)} aria-label="More options" className={cn(more && "text-teal")}>
+          <Button variant="ghost" size="icon" onClick={() => setMore((v) => !v)} aria-label="More options" className={cn(more && "text-text")}>
             <ChevronDown className={cn("transition", more && "rotate-180")} />
           </Button>
           <Button size="icon" onClick={add} disabled={pending || title.trim().length < 2} aria-label="Add task">
@@ -84,7 +84,7 @@ export function TasksPanel({ clientId, tasks }: { clientId: string; tasks: Task[
           </Group>
           {done.length > 0 && (
             <div>
-              <button type="button" className="eyebrow mb-1 flex items-center gap-1" onClick={() => setShowDone((v) => !v)}>
+              <button type="button" className="label mb-1 flex items-center gap-1" onClick={() => setShowDone((v) => !v)}>
                 Done <span className="num">{done.length}</span> <ChevronDown className={cn("size-3 transition", showDone && "rotate-180")} />
               </button>
               {showDone && (
@@ -105,7 +105,7 @@ export function TasksPanel({ clientId, tasks }: { clientId: string; tasks: Task[
 function Group({ title, n, children }: { title: string; n: number; children: React.ReactNode }) {
   return (
     <div>
-      <p className="eyebrow mb-1">
+      <p className="label mb-1 border-b border-border pb-1">
         {title} <span className="num">{n}</span>
       </p>
       <ul className="divide-y divide-border/60">{children}</ul>

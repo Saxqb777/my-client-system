@@ -2,13 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { ClientSummary } from "@/lib/data/clients";
 import { HEALTH_ORDER } from "@/lib/core/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { EmptyState } from "@/components/aurora/EmptyState";
-import { ClientCard } from "./ClientCard";
+import { ClientsTable } from "./ClientsTable";
 import { ClientForm } from "./ClientForm";
 import { cn } from "@/lib/utils";
 
@@ -28,9 +27,7 @@ export function ClientsGrid({ clients, archived }: { clients: ClientSummary[]; a
   const list = useMemo(() => {
     const base = filter === "archived" ? archived : clients.filter((c) => (filter === "all" ? true : c.health === filter));
     const needle = q.trim().toLowerCase();
-    const filtered = needle
-      ? base.filter((c) => [c.name, c.code, c.fullName, c.system, ...(c.aliases ?? [])].filter(Boolean).some((s) => s!.toLowerCase().includes(needle)))
-      : base;
+    const filtered = needle ? base.filter((c) => [c.name, c.code, c.fullName, c.system, ...(c.aliases ?? [])].filter(Boolean).some((s) => s!.toLowerCase().includes(needle))) : base;
     return [...filtered].sort((a, b) => {
       const h = HEALTH_ORDER.indexOf(a.health) - HEALTH_ORDER.indexOf(b.health);
       return h !== 0 ? h : a.sortOrder - b.sortOrder || a.name.localeCompare(b.name);
@@ -46,56 +43,32 @@ export function ClientsGrid({ clients, archived }: { clients: ClientSummary[]; a
 
   return (
     <>
-      <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-1.5">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-6 text-[14px]">
           {chips.map((c) => (
             <button
               key={c.key}
               type="button"
               onClick={() => setFilter(c.key)}
-              className={cn(
-                "pill transition",
-                filter === c.key ? "border-border-strong bg-surface-3 text-text" : "hover:border-border-strong hover:text-text",
-              )}
+              className={cn("border-b-2 pb-1 transition-colors", filter === c.key ? "border-ink text-text" : "border-transparent text-muted hover:text-text")}
             >
-              {c.label} <span className="num text-[11px] text-muted">{c.n}</span>
+              {c.label} <span className="num ml-1 text-[12px] text-muted">{c.n}</span>
             </button>
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search clients" className="h-9 w-full pl-9 sm:w-56" />
-          </div>
-          <Button onClick={() => setOpen(true)} size="sm" className="h-9">
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className="h-9 w-full sm:w-52" />
+          <Button onClick={() => setOpen(true)} size="md">
             <Plus /> New client
           </Button>
         </div>
       </div>
 
-      {list.length === 0 ? (
-        <div className="glass">
-          <EmptyState
-            title={filter === "archived" ? "No archived clients" : q ? "No clients match" : "No clients yet"}
-            hint={filter === "archived" ? "Archived clients appear here." : "Add a client to start tracking."}
-            action={
-              filter !== "archived" && !q ? (
-                <Button onClick={() => setOpen(true)}>
-                  <Plus /> Add your first client
-                </Button>
-              ) : null
-            }
-          />
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {list.map((c, i) => (
-            <div key={c.id} className="animate-fade-up" style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
-              <ClientCard client={c} />
-            </div>
-          ))}
-        </div>
-      )}
+      <ClientsTable
+        clients={list}
+        emptyTitle={filter === "archived" ? "No archived clients" : q ? "No clients match" : "No clients yet"}
+        emptyHint={filter === "archived" ? "Archived clients appear here." : "Add a client to start tracking."}
+      />
 
       <ClientForm open={open} onOpenChange={setOpen} />
     </>

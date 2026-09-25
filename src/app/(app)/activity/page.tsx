@@ -5,7 +5,6 @@ import { activitySourceEnum, activityTypeEnum, type ActivitySource, type Activit
 import { listActivities } from "@/lib/data/activities";
 import { listClients } from "@/lib/data/clients";
 import { PageHeader } from "@/components/aurora/PageHeader";
-import { GlassCard } from "@/components/aurora/GlassCard";
 import { ActivityFeed } from "@/components/activity/ActivityFeed";
 import { ActivityFilters } from "@/components/activity/ActivityFilters";
 import { Button } from "@/components/ui/button";
@@ -36,20 +35,18 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="animate-fade-up">
-      <PageHeader title="Activity" />
+      <PageHeader title="Activity" description={`${activities.length}${activities.length >= limit ? "+" : ""} entries`} />
       <Suspense>
         <ActivityFilters clients={clients.map((c) => ({ id: c.id, name: c.name, code: c.code, health: c.health }))} />
       </Suspense>
-      <GlassCard>
-        <ActivityFeed activities={activities} />
-        {activities.length >= limit && (
-          <div className="mt-4 flex justify-center">
-            <Button asChild variant="secondary" size="sm">
-              <Link href={`/activity?${more.toString()}`}>Show more</Link>
-            </Button>
-          </div>
-        )}
-      </GlassCard>
+      <ActivityFeed activities={activities} />
+      {activities.length >= limit && (
+        <div className="mt-6">
+          <Button asChild variant="secondary" size="sm">
+            <Link href={`/activity?${more.toString()}`}>Show more</Link>
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

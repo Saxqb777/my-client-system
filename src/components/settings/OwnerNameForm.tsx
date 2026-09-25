@@ -31,7 +31,7 @@ export function OwnerNameForm({ initial }: { initial: string }) {
       <div className="flex-1 space-y-1.5">
         <Label htmlFor="owner">Your name</Label>
         <Input id="owner" value={name} onChange={(e) => setName(e.target.value)} />
-        <p className="text-[11px] text-muted">Used in greetings and as the default owner on new clients.</p>
+        <p className="text-[11px] text-muted">Used as the default owner on new clients.</p>
       </div>
       <Button type="submit" variant="secondary" disabled={pending || name.trim() === initial}>
         {pending && <Loader2 className="animate-spin" />} Save

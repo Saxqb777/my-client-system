@@ -12,7 +12,7 @@ Never implement, change, or deploy anything without Saaqib's explicit confirmati
 
 No hyphens, en dashes or em dashes as punctuation. Colons are fine. Do not hyphenate compound words: write sign off, go live, follow up. Short, clean, action oriented. `cleanStyle()` in `src/lib/core/style.ts` enforces this on AI output; `WRITING_STYLE_RULES` goes into every prompt.
 
-The same applies to UI copy. Saaqib rejected the first pass as "AI vibe", so: no mono uppercase section labels, no middle dot separators, no chatty lines ("Nothing overdue. Good."), no marketing intros under page titles. Plain factual sentences and counts. Fonts are Manrope (headings), Inter (body), JetBrains Mono (dates and numbers). Background is aurora curtains along the top edge only, never round glow blobs.
+The same applies to UI copy. Saaqib rejected two passes as "AI vibe" (glass cards, glowing orbs, gradient blobs, pills, Inter and Manrope, chatty lines). The current design is paper and ink: warm paper background with ink text by default, a dark "ink" theme in reverse, hairline rules instead of boxes, no blur, no glow, no gradients, colour only where it carries meaning (health, issues, overdue). Fonts are Newsreader (display, serif), IBM Plex Sans (body) and IBM Plex Mono (dates, codes, numbers). Health is a word with a small square swatch, never a glowing dot. Clients are listed as a ledger table. Section headings are serif over a rule. No mono uppercase labels, no middle dot separators, no marketing copy, no greeting: the home masthead is one factual headline built from the data.
 
 ## Stack
 

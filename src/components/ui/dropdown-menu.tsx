@@ -20,7 +20,7 @@ const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "glass glass-sm z-50 min-w-[180px] overflow-hidden p-1.5 text-sm text-text shadow-xl",
+        "float z-50 min-w-[180px] overflow-hidden p-1 text-sm text-text",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         className,
       )}
@@ -37,7 +37,7 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center gap-2 rounded-lg px-2.5 py-2 outline-none transition-colors focus:bg-surface-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted",
+      "relative flex cursor-default select-none items-center gap-2 rounded-[3px] px-2.5 py-1.5 outline-none transition-colors focus:bg-surface-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted",
       inset && "pl-8",
       danger && "text-bad focus:bg-[color-mix(in_oklab,var(--bad)_14%,transparent)] [&_svg]:text-bad",
       className,
@@ -54,14 +54,14 @@ const DropdownMenuRadioItem = React.forwardRef<
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-lg py-2 pl-8 pr-2 outline-none transition-colors focus:bg-surface-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      "relative flex cursor-default select-none items-center rounded-[3px] py-1.5 pl-8 pr-2 outline-none transition-colors focus:bg-surface-2 data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className,
     )}
     {...props}
   >
     <span className="absolute left-2 flex size-4 items-center justify-center">
       <DropdownMenuPrimitive.ItemIndicator>
-        <Check className="size-4 text-teal" />
+        <Check className="size-4 text-text" />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}
@@ -73,7 +73,7 @@ const DropdownMenuLabel = React.forwardRef<
   React.ComponentRef<typeof DropdownMenuPrimitive.Label>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label>
 >(({ className, ...props }, ref) => (
-  <DropdownMenuPrimitive.Label ref={ref} className={cn("eyebrow px-2.5 py-1.5", className)} {...props} />
+  <DropdownMenuPrimitive.Label ref={ref} className={cn("label px-2.5 py-1.5", className)} {...props} />
 ));
 DropdownMenuLabel.displayName = "DropdownMenuLabel";
 

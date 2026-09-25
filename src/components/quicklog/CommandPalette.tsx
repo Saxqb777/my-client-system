@@ -3,10 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useState } from "react";
-import { Activity, Building2, LogOut, Moon, Orbit, Plus, Settings, Sparkles, Sun } from "lucide-react";
+import { Activity, Building2, LogOut, Moon, Orbit, PenLine, Plus, Settings, Sun } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut } from "@/components/ui/command";
-import { HealthOrb } from "@/components/aurora/HealthOrb";
+import { HealthSwatch } from "@/components/aurora/HealthMark";
 import type { NavClient } from "@/components/shell/nav";
 
 export function CommandPalette({
@@ -47,8 +47,8 @@ export function CommandPalette({
             <CommandEmpty>No match. Press Enter to log it as an update.</CommandEmpty>
             {canLog && (
               <CommandGroup heading="Quick log">
-                <CommandItem value={`log ${query}`} onSelect={() => onLog(query)} className="data-[selected=true]:bg-[color-mix(in_oklab,var(--teal)_14%,transparent)]">
-                  <Sparkles className="!text-teal" />
+                <CommandItem value={`log ${query}`} onSelect={() => onLog(query)} >
+                  <PenLine />
                   <span className="truncate">
                     Log update: <span className="text-text-2">{query}</span>
                   </span>
@@ -74,7 +74,7 @@ export function CommandPalette({
               <CommandGroup heading="Clients">
                 {clients.map((c) => (
                   <CommandItem key={c.id} value={`${c.code} ${c.name}`} onSelect={() => go(`/clients/${c.id}`)}>
-                    <HealthOrb health={c.health} pulse={false} />
+                    <HealthSwatch health={c.health} />
                     <span>{c.name}</span>
                     <span className="num ml-1 text-xs text-muted">{c.code}</span>
                   </CommandItem>

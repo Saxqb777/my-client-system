@@ -7,12 +7,12 @@ import { listOverdueTasks, listTasksDueToday, listWaitingTasks } from "./tasks";
 
 export async function getDashboard() {
   const db = await getDb();
-  const [clients, dueToday, overdueTasks, overdueMilestones, weekMilestones, waiting, recent] = await Promise.all([
+  const [clients, dueToday, overdueTasks, overdueMilestones, upcoming, waiting, recent] = await Promise.all([
     listClientSummaries(),
     listTasksDueToday(),
     listOverdueTasks(),
     listOverdueMilestones(),
-    listUpcomingMilestones(7),
+    listUpcomingMilestones(45),
     listWaitingTasks(),
     db.query.activities.findMany({
       where: isNotNull(activities.clientId),
@@ -26,7 +26,7 @@ export async function getDashboard() {
     dueToday,
     overdueTasks,
     overdueMilestones,
-    weekMilestones,
+    upcoming,
     waiting,
     recent: recent.filter((a) => a.client && !a.client.archivedAt),
   };

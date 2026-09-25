@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { CountdownRing } from "@/components/aurora/CountdownRing";
+import { DaysFigure } from "@/components/aurora/DaysFigure";
 import { EmptyState } from "@/components/aurora/EmptyState";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -57,15 +57,15 @@ export function MilestonesPanel({ clientId, milestones }: { clientId: string; mi
         <EmptyState title="No dates yet" hint="Add target, SIT, UAT, go live and system dates." compact />
       ) : (
         <>
-          <ul className="space-y-2">
+          <ul>
             {upcoming.map((m) => (
               <Row key={m.id} m={m} onMove={() => { setMoving(m); setMove({ date: m.date, reason: "" }); }} onDone={() => run(() => updateMilestoneAction(m.id, { status: "done" }), `${m.title} done`)} onDelete={() => run(() => deleteMilestoneAction(m.id))} onCancel={() => run(() => updateMilestoneAction(m.id, { status: "cancelled" }))} />
             ))}
           </ul>
           {finished.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-medium text-muted">Completed</p>
-              <ul className="space-y-2 opacity-80">
+              <p className="label mb-1 border-b border-border pb-1">Completed</p>
+              <ul className="opacity-80">
                 {finished.map((m) => (
                   <Row key={m.id} m={m} onReopen={() => run(() => updateMilestoneAction(m.id, { status: "upcoming" }))} onDelete={() => run(() => deleteMilestoneAction(m.id))} />
                 ))}
@@ -178,14 +178,16 @@ function Row({ m, onMove, onDone, onReopen, onCancel, onDelete }: { m: Milestone
   const slip = delayText(m.originalDate, m.date);
   const moves = m.dateHistory.length;
   return (
-    <li className={cn("glass-inset flex items-center gap-3 p-3", m.status === "cancelled" && "opacity-60")}>
-      <CountdownRing daysLeft={days} span={30} size={52} done={done} caption={done ? undefined : "days"} />
+    <li className={cn("flex items-center gap-4 border-b border-border py-3 last:border-0", m.status === "cancelled" && "opacity-60")}>
+      <div className="w-[88px] shrink-0">
+        <DaysFigure daysLeft={days} done={done} size="md" />
+      </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <p className={cn("text-sm font-medium", done && "line-through text-muted")}>{m.title}</p>
-          <Badge className="!py-0 !text-[11px]">{MILESTONE_TYPES[m.type].label}</Badge>
-          {slip && !done && <Badge tone="warn" className="!py-0 !text-[11px]">Delayed: {slip}</Badge>}
-          {m.status === "cancelled" && <Badge className="!py-0 !text-[11px]">Cancelled</Badge>}
+          <p className={cn("text-[15px] text-text", done && "line-through text-muted")}>{m.title}</p>
+          <Badge>{MILESTONE_TYPES[m.type].label}</Badge>
+          {slip && !done && <Badge tone="warn">Moved by {slip}</Badge>}
+          {m.status === "cancelled" && <Badge>Cancelled</Badge>}
           {m.isDemo && <span className="text-[10px] uppercase tracking-wider text-faint">demo</span>}
         </div>
         <p className="mt-0.5 text-[12px] text-muted">

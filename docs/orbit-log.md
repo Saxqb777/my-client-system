@@ -4,7 +4,7 @@ Running memory for Orbit. Newest entries at the top of each section. Update this
 
 ## Status
 
-- Phase 1: live with Saaqib's five real clients loaded (RSA Talke, IDS DASH, ADSO TMS and Clearance, Agthia FMS, ADFH OMS). Seeded NL, EDGE and ALFOAH deleted. Design pass 2 deployed. Awaiting his next round of live feedback.
+- Phase 1: live with Saaqib's five real clients (RSA Talke, IDS DASH, ADSO TMS and Clearance, Agthia FMS, ADFH OMS). Tasks cleared and dates reduced to the eight key ones at his request. Design pass 3 (paper and ink) deployed. Awaiting his live feedback.
 - Phase 2: not started (tasks page, dates page, meetings and MOM, paste box, Copilot next moves).
 - Phase 3: not started (Friday pack in the 7 column format, cron, history, exports, REST API, CLAUDE commands).
 - Phase 4: not started (documents with search, /brd /qa /screens /email, Ask Orbit, style memory, PWA, polish).
@@ -31,6 +31,8 @@ Running memory for Orbit. Newest entries at the top of each section. Update this
 
 ## Decisions
 
+- 2026-09-25 Design pass 3, "paper and ink", after Saaqib rejected pass 2 as still "AI": fonts, words, bubbles and the small colour circles. New direction: warm paper light theme by default, ink dark theme, Newsreader serif for headings and big figures, IBM Plex Sans body, IBM Plex Mono for dates and codes. No glass, blur, glow, gradients, pills or orbs. Hairline rules instead of cards. Health as a word with a square swatch. Clients as a ledger table. Home masthead is a factual headline from the data (next date or overdue date) plus one line of counts, then a one line quick log field. Orbit view redrawn as a technical drawing: hairline rings labelled Live, Build and test, Scope, solid marks sized by activity, no animation. Desktop top bar removed, sidebar carries wordmark, date, log button and text nav. Screenshots reviewed locally before deploy.
+- 2026-09-25 Data reset on Saaqib's request: all tasks deleted, milestones reduced to upcoming key dates only (types target, sit, uat, go_live, status upcoming). 8 dates remain: IDS UAT close 29 Sep and go live 1 Oct, ADFH BRD sessions 28 Sep and 1 Oct, solution design and SIT 12 Oct, UAT 15 Oct, go live 21 Oct. Agthia, ADSO and RSA have no dates. Activities, people, meetings and documents kept.
 - 2026-09-25 Real client data loaded from five project chat exports (JSON per the data collection prompt, kept locally in `data/imports/`, git ignored). Pipeline: `src/lib/import/schema.ts` (zod) → `src/lib/import/mapProject.ts` (pure mapper) → `scripts/import-project-sql.ts` (statement batches) → Neon connector. Imported activities carry `source = import`. Saaqib asked for the data to "make sense", so the mapper applies six rules: undated activities that match a "done this week" line are dated inside this week and tagged `date approx`, otherwise dated today with the tag; a dateless finished milestone takes a date from its own note; a dateless open milestone becomes a task only if no similar task exists; a past dated "upcoming" milestone that repeats an activity is dropped; a task waiting on Saaqib is a plain to do; same day activities keep export order. Tags show in the activity feed.
 - 2026-09-25 Demo data tools removed from Settings. Real clients reuse the seed codes, and Load demo data would have overwritten them. `seedDemoData` now skips any client whose `demo_status` is false. `pnpm db:seed` stays for local PGlite only.
 - 2026-09-25 Kept as exported, flagged to Saaqib: ADFH HLD issued (17 Sep) and HLD sign off (21 Sep) stay overdue; Agthia has no UAT target date because the plan lapsed and nothing new is set; ADFH phase start shows 28 Sep (BRD session start); RSA notes hold the UAT login he supplied.
@@ -49,7 +51,7 @@ Running memory for Orbit. Newest entries at the top of each section. Update this
 
 - Short messages, bullets, explain only when asked.
 - Never implement without a final confirmation.
-- Not a corporate look, but not "AI template" either. Aurora: deep navy base, teal, violet and magenta light curtains along the top, glass cards, glowing health orbs, countdown rings. Manrope headings, Inter body, JetBrains Mono numbers. Plain factual copy.
+- Not a corporate look, but not "AI template" either. Two passes of dark navy, glass, glow and neon were rejected. Current: paper and ink, serif headings, hairline rules, ledger tables, colour only for meaning. Plain factual copy, no greeting.
 - Wants AI to help with next steps and learn his way of working over time (Copilot in Phase 2, style memory in Phase 4).
 - He judges changes after using them live; deploy early, then iterate on his feedback.
 

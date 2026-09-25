@@ -6,7 +6,7 @@ const password = process.env.ORBIT_PASSWORD ?? "orbit-local-dev";
 
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
 
-async function shoot(name, path, { width = 1440, height = 900, theme = "dark", full = false, before } = {}) {
+async function shoot(name, path, { width = 1440, height = 900, theme = "light", full = false, before } = {}) {
   const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1, colorScheme: theme });
   const page = await ctx.newPage();
   const errors = [];
@@ -26,9 +26,7 @@ async function shoot(name, path, { width = 1440, height = 900, theme = "dark", f
     await page.click("button[type=submit]");
     await page.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 30000 });
   }
-  if (theme === "light") {
-    await page.evaluate(() => { localStorage.setItem("theme", "light"); });
-  }
+  await page.evaluate((t) => { localStorage.setItem("theme", t); }, theme);
   await page.goto(`${base}${path}`, { waitUntil: "networkidle" });
   await page.waitForTimeout(1200);
   if (before) await before(page);
@@ -41,7 +39,7 @@ async function shoot(name, path, { width = 1440, height = 900, theme = "dark", f
 await shoot("login", "/login");
 await shoot("home", "/");
 await shoot("home-full", "/", { full: true });
-await shoot("home-light", "/", { theme: "light" });
+await shoot("home-dark", "/", { theme: "dark" });
 await shoot("clients", "/clients");
 await shoot("activity", "/activity");
 await shoot("settings", "/settings");
@@ -51,14 +49,14 @@ await shoot("clients-mobile", "/clients", { width: 390, height: 844 });
 // Client detail: first card
 await shoot("client", "/clients", {
   before: async (page) => {
-    await Promise.all([page.waitForURL(/\/clients\/[0-9a-f-]{36}/, { timeout: 60000 }), page.click("a[href^='/clients/']")]);
+    await Promise.all([page.waitForURL(/\/clients\/[0-9a-f-]{36}/, { timeout: 60000 }), page.click("table.ledger tbody tr")]);
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(1000);
   },
 });
 await shoot("client-dates", "/clients", {
   before: async (page) => {
-    await Promise.all([page.waitForURL(/\/clients\/[0-9a-f-]{36}/, { timeout: 60000 }), page.click("a[href^='/clients/']")]);
+    await Promise.all([page.waitForURL(/\/clients\/[0-9a-f-]{36}/, { timeout: 60000 }), page.click("table.ledger tbody tr")]);
     await page.waitForLoadState("networkidle");
     await page.click("button[role=tab]:has-text('Dates')");
     await page.waitForTimeout(1000);

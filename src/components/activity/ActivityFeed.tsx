@@ -17,11 +17,11 @@ export function ActivityFeed({ activities, showClient = true, emptyHint }: { act
     else groups.push({ key, label: formatDayHeading(a.occurredAt), items: [a] });
   }
   return (
-    <div className="space-y-5">
+    <div className="space-y-7">
       {groups.map((g) => (
         <section key={g.key}>
-          <h3 className="sticky top-14 z-10 mb-1 bg-[color-mix(in_oklab,var(--bg)_70%,transparent)] py-1 text-xs font-medium text-muted backdrop-blur lg:top-16">{g.label}</h3>
-          <ul className="divide-y divide-border/60">
+          <h3 className="num sticky top-12 z-10 border-b border-ink bg-bg pb-1.5 pt-1 text-[12px] text-text lg:top-0">{g.label}</h3>
+          <ul>
             {g.items.map((a) => (
               <ActivityItem key={a.id} activity={a} client={a.client ?? null} showClient={showClient} />
             ))}

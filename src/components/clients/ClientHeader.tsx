@@ -13,8 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { HealthOrb } from "@/components/aurora/HealthOrb";
-import { CountdownRing } from "@/components/aurora/CountdownRing";
+import { HealthMark } from "@/components/aurora/HealthMark";
+import { DaysFigure } from "@/components/aurora/DaysFigure";
 import { ClientForm } from "./ClientForm";
 import { cn } from "@/lib/utils";
 
@@ -37,56 +37,27 @@ export function ClientHeader({ client }: { client: Client }) {
     });
   }
 
-  const hasDates = client.phaseStartDate && client.phaseTargetDate;
-  const totalDays = hasDates ? Math.max(1, daysUntil(client.phaseTargetDate!) - daysUntil(client.phaseStartDate!)) : 30;
   const left = client.phaseTargetDate ? daysUntil(client.phaseTargetDate) : null;
   const slip = client.phaseTargetOriginal && client.phaseTargetDate ? delayText(client.phaseTargetOriginal, client.phaseTargetDate) : "";
-  const hue = client.color ?? "200";
 
   return (
-    <header className="glass relative overflow-hidden p-5 sm:p-6" style={{ ["--hue" as string]: hue }}>
-      <span className="pointer-events-none absolute -right-20 -top-24 size-72 rounded-full opacity-25 blur-3xl" style={{ background: `hsl(${hue} 80% 60%)` }} />
-      <div className="relative flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="num rounded-md border border-border bg-surface px-2 py-0.5 text-[11px] text-muted">{client.code}</span>
-            {client.system && <span className="text-xs text-muted">{client.system}</span>}
-            {client.archivedAt && <Badge>Archived</Badge>}
-            {client.demoStatus && <Badge tone="violet">Demo status</Badge>}
-          </div>
-          <div className="mt-2 flex items-center gap-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button type="button" className="group flex items-center gap-2 rounded-full pr-1 outline-none" aria-label="Change health" disabled={pending}>
-                  <HealthOrb health={client.health} size="xl" />
-                  <ChevronDown className="size-3.5 text-muted opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuLabel>Health</DropdownMenuLabel>
-                <DropdownMenuRadioGroup value={client.health} onValueChange={(v) => patch({ health: v }, `Health: ${HEALTH[v as Client["health"]].label}`)}>
-                  {Object.entries(HEALTH).map(([k, v]) => (
-                    <DropdownMenuRadioItem key={k} value={k}>
-                      <span className="flex items-center gap-2">
-                        <span className={cn("orb !size-2.5", `orb-${v.css}`)} /> {v.label}
-                      </span>
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <h1 className="font-display truncate text-[30px] font-semibold leading-none sm:text-[38px]">{client.name}</h1>
-          </div>
-          <p className="mt-2 flex flex-wrap items-center gap-x-3 text-sm text-muted">
-            {client.fullName && client.fullName !== client.name && <span>{client.fullName}</span>}
-            <span>Owner: {client.owner}</span>
-          </p>
+    <header className="border-b border-ink pb-7">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted">
+        <span className="num">{client.code}</span>
+        {client.system && <span>{client.system}</span>}
+        {client.archivedAt && <Badge>Archived</Badge>}
+      </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="mt-2 flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1">
+          <h1 className="serif text-[40px] leading-[1.02] text-text sm:text-[56px]">{client.name}</h1>
+          {client.fullName && client.fullName !== client.name && <p className="mt-2 text-[14px] text-muted">{client.fullName}</p>}
+
+          <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 text-[14px]">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button type="button" className="pill pill-teal transition hover:brightness-110" disabled={pending}>
-                  {phaseLabel(client.phase)} <ChevronDown className="size-3" />
+                <button type="button" className="inline-flex items-center gap-1 text-text underline decoration-border-strong underline-offset-4 hover:decoration-text" disabled={pending}>
+                  {phaseLabel(client.phase)} <ChevronDown className="size-3.5 text-muted" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start">
@@ -100,35 +71,87 @@ export function ClientHeader({ client }: { client: Client }) {
                 </DropdownMenuRadioGroup>
               </DropdownMenuContent>
             </DropdownMenu>
-            <span className={cn("pill", `pill-${HEALTH[client.health].css}`)}>{HEALTH[client.health].label}</span>
-            {slip && <span className="pill pill-warn">Target delayed: {slip}</span>}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" className="inline-flex items-center gap-1" aria-label="Change health" disabled={pending}>
+                  <HealthMark health={client.health} className="text-[14px]" />
+                  <ChevronDown className="size-3.5 text-muted" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Health</DropdownMenuLabel>
+                <DropdownMenuRadioGroup value={client.health} onValueChange={(v) => patch({ health: v }, `Health: ${HEALTH[v as Client["health"]].label}`)}>
+                  {(Object.keys(HEALTH) as Client["health"][]).map((k) => (
+                    <DropdownMenuRadioItem key={k} value={k}>
+                      <HealthMark health={k} className="font-normal" />
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <span className="text-muted">Owner {client.owner}</span>
           </div>
 
-          <div className="mt-5">
-            <p className="mb-1.5 text-xs font-medium text-muted">Next step</p>
+          <div className="mt-7 max-w-2xl">
+            <p className="label mb-1.5">Next step</p>
             {editingNext ? (
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-                <Textarea autoFocus value={nextDraft} onChange={(e) => setNextDraft(e.target.value)} className="min-h-[64px] max-w-xl" onKeyDown={(e) => { if (e.key === "Escape") setEditingNext(false); if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { patch({ nextStep: nextDraft }, "Next step saved"); setEditingNext(false); } }} />
+                <Textarea
+                  autoFocus
+                  value={nextDraft}
+                  onChange={(e) => setNextDraft(e.target.value)}
+                  className="min-h-[72px]"
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") setEditingNext(false);
+                    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+                      patch({ nextStep: nextDraft }, "Next step saved");
+                      setEditingNext(false);
+                    }
+                  }}
+                />
                 <div className="flex gap-1">
-                  <Button size="sm" onClick={() => { patch({ nextStep: nextDraft }, "Next step saved"); setEditingNext(false); }} disabled={pending}>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      patch({ nextStep: nextDraft }, "Next step saved");
+                      setEditingNext(false);
+                    }}
+                    disabled={pending}
+                  >
                     <Check /> Save
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => { setEditingNext(false); setNextDraft(client.nextStep ?? ""); }}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditingNext(false);
+                      setNextDraft(client.nextStep ?? "");
+                    }}
+                  >
                     <X />
                   </Button>
                 </div>
               </div>
             ) : (
-              <button type="button" onClick={() => { setNextDraft(client.nextStep ?? ""); setEditingNext(true); }} className="group flex max-w-xl items-start gap-2 text-left">
-                <span className={cn("text-[15px] leading-snug", client.nextStep ? "text-text" : "text-faint")}>{client.nextStep || "Set the next step"}</span>
-                <Pencil className="mt-1 size-3.5 shrink-0 text-faint opacity-0 transition group-hover:opacity-100" />
+              <button
+                type="button"
+                onClick={() => {
+                  setNextDraft(client.nextStep ?? "");
+                  setEditingNext(true);
+                }}
+                className="group flex items-start gap-2 text-left"
+              >
+                <span className={cn("serif text-[22px] leading-snug", client.nextStep ? "text-text" : "text-faint")}>{client.nextStep || "Set the next step"}</span>
+                <Pencil className="mt-2 size-3.5 shrink-0 text-faint opacity-0 transition group-hover:opacity-100" />
               </button>
             )}
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-col gap-4 lg:items-end">
-          <div className="flex items-center gap-2">
+        <div className="shrink-0 lg:w-[260px]">
+          <div className="flex items-center gap-2 lg:justify-end">
             <Button variant="secondary" size="sm" onClick={() => setEdit(true)}>
               <Pencil /> Edit
             </Button>
@@ -161,22 +184,23 @@ export function ClientHeader({ client }: { client: Client }) {
             </DropdownMenu>
           </div>
 
-          <div className="glass-inset flex items-center gap-4 p-3.5">
-            {left !== null ? <CountdownRing daysLeft={left} span={totalDays} size={64} stroke={5} caption="days" /> : <div className="flex size-16 items-center justify-center rounded-full border border-dashed border-border-strong text-[10px] text-faint">no target</div>}
-            <div className="text-sm">
-              <p className="text-xs font-medium text-muted">Current phase</p>
-              <p className="mt-1 text-text">
-                <span className="num">{client.phaseStartDate ? formatDate(client.phaseStartDate) : "Start not set"}</span>
-                <span className="text-muted"> to </span>
-                <span className="num">{client.phaseTargetDate ? formatDate(client.phaseTargetDate) : "Target not set"}</span>
+          <div className="mt-5 border-t border-border pt-4">
+            <p className="label">Current phase</p>
+            {left !== null ? (
+              <DaysFigure daysLeft={left} size="lg" className="mt-1" />
+            ) : (
+              <button type="button" className="mt-1 text-[14px] text-text underline decoration-border-strong underline-offset-4 hover:decoration-text" onClick={() => setEdit(true)}>
+                Set a target date
+              </button>
+            )}
+            <p className="num mt-2 text-[12px] text-muted">
+              {client.phaseStartDate ? formatDate(client.phaseStartDate) : "Start not set"} to {client.phaseTargetDate ? formatDate(client.phaseTargetDate) : "target not set"}
+            </p>
+            {slip && (
+              <p className="mt-1 text-[12px] text-warn">
+                Originally {formatDate(client.phaseTargetOriginal!)}, moved by {slip}
               </p>
-              {slip && <p className="mt-0.5 text-[11px] text-warn">Originally {formatDate(client.phaseTargetOriginal!)}</p>}
-              {!hasDates && (
-                <button type="button" className="mt-1 text-[11px] text-teal hover:underline" onClick={() => setEdit(true)}>
-                  Set phase dates
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>

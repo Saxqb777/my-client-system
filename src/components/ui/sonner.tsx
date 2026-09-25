@@ -11,9 +11,9 @@ export function Toaster() {
       position="bottom-center"
       toastOptions={{
         classNames: {
-          toast: "!glass !glass-sm !text-text !text-sm !shadow-2xl",
+          toast: "!float !text-text !text-sm",
           description: "!text-muted",
-          actionButton: "!bg-accent !text-accent-ink",
+          actionButton: "!bg-ink !text-paper",
         },
       }}
     />
