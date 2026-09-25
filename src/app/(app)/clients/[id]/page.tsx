@@ -72,7 +72,7 @@ export default async function ClientPage({ params, searchParams }: Props) {
           <MilestonesPanel clientId={client.id} milestones={client.milestones} />
         </TabsContent>
         <TabsContent value="meetings">
-          <MeetingsPanel clientId={client.id} clientName={client.name} meetings={client.meetings} people={client.people} now={now} />
+          <MeetingsPanel clientId={client.id} clientCode={client.code} clientName={client.name} meetings={client.meetings} people={client.people} now={now} />
         </TabsContent>
         <TabsContent value="tasks">
           <TasksPanel clientId={client.id} tasks={client.tasks} />

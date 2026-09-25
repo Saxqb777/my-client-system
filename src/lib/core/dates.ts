@@ -50,6 +50,12 @@ export function formatDate(date: ISODate | Date | null | undefined, withYear = t
   return formatInTimeZone(d, TIMEZONE, withYear ? "d MMM yyyy" : "d MMM");
 }
 
+/** "24 September 2026" in Dubai time, for documents. */
+export function formatDateLong(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return formatInTimeZone(d, TIMEZONE, "d MMMM yyyy");
+}
+
 /** "Thu 24 Sep, 14:05" in Dubai time */
 export function formatDateTime(date: Date | string | null | undefined): string {
   if (!date) return "";

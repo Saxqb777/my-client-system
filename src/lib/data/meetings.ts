@@ -1,7 +1,8 @@
 import { and, asc, desc, eq, gte, inArray, lt, type SQL } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { activities, clients, documents, meetings, type ActionItem, type ActivitySource, type Client, type Meeting } from "@/lib/db/schema";
+import { activities, clients, documents, meetings, type ActionItem, type ActivitySource, type Client, type Meeting, type MinutesBody } from "@/lib/db/schema";
 import { formatDateTime } from "@/lib/core/dates";
+import { projectLabel, renderMinutesText } from "@/lib/core/minutes";
 import type { MeetingInput, MeetingPatch } from "@/lib/validation";
 import type { MinutesPlan } from "@/lib/ai/mom";
 import { updateClient } from "./clients";
@@ -138,16 +139,31 @@ export async function saveMinutes(id: string, plan: MinutesPlan, accept: { tasks
     if (patch.notes) lines.push("Client notes updated");
   }
 
-  // The meeting itself
+  // The meeting itself: structured minutes for the Word file, plus the text twin for Orbit and search
+  const title = plan.title || meeting.title;
+  const location = plan.location ?? meeting.location;
+  const minutes: MinutesBody = { objective: plan.objective, points: plan.points };
+  const text = renderMinutesText({
+    clientCode: meeting.client.code,
+    clientName: meeting.client.name,
+    project: projectLabel(meeting.client),
+    title,
+    heldAt: meeting.heldAt,
+    location,
+    objective: plan.objective,
+    points: plan.points,
+    actions: plan.actionItems.map((a) => ({ text: a.text, owner: a.owner })),
+  });
   await db
     .update(meetings)
-    .set({ status: "minuted", title: plan.title || meeting.title, attendees: plan.attendees.length ? plan.attendees : meeting.attendees, mom: plan.mom, actionItems })
+    .set({ status: "minuted", title, location, attendees: plan.attendees.length ? plan.attendees : meeting.attendees, mom: text, minutes, actionItems })
     .where(eq(meetings.id, id));
 
-  // A searchable document for Phase 4
+  // A searchable document for Phase 4. One per meeting: a rebuild replaces the old one.
+  if (meeting.documentId) await db.delete(documents).where(eq(documents.id, meeting.documentId));
   const [doc] = await db
     .insert(documents)
-    .values({ clientId, type: "mom", title: `${plan.title || meeting.title} minutes`, content: plan.mom, tags: ["mom"], meetingId: id })
+    .values({ clientId, type: "mom", title: `${title} minutes`, content: text, tags: ["mom"], meetingId: id })
     .returning();
   await db.update(meetings).set({ documentId: doc.id }).where(eq(meetings.id, id));
 
@@ -155,7 +171,7 @@ export async function saveMinutes(id: string, plan: MinutesPlan, accept: { tasks
   await db.insert(activities).values({
     clientId,
     type: "meeting",
-    title: `Minutes ready: ${plan.title || meeting.title}`,
+    title: `Minutes ready: ${title}`,
     body: plan.summary,
     occurredAt: meeting.heldAt,
     source,
@@ -165,7 +181,7 @@ export async function saveMinutes(id: string, plan: MinutesPlan, accept: { tasks
     await db.insert(activities).values({
       clientId,
       type: "decision",
-      title: plan.decisions.length === 1 ? plan.decisions[0] : `${plan.decisions.length} decisions in ${plan.title || meeting.title}`,
+      title: plan.decisions.length === 1 ? plan.decisions[0] : `${plan.decisions.length} decisions in ${title}`,
       body: plan.decisions.length > 1 ? plan.decisions.map((d, i) => `${i + 1}. ${d}`).join("\n") : null,
       occurredAt: new Date(meeting.heldAt.getTime() + 60_000),
       source,

@@ -31,6 +31,7 @@ pnpm db:generate    # drizzle-kit generate after editing src/lib/db/schema.ts
 pnpm db:migrate     # applies ./drizzle to DATABASE_URL over HTTP (needs network access to Neon)
 pnpm db:seed        # loads demo data into a local PGlite database only, never production
 node scripts/shots.mjs   # Playwright screenshots of every page into ./shots (needs a running dev server)
+node scripts/shots-minutes.mjs   # walks the minutes flow: set a meeting, transcript, review, save, download the Word file
 ```
 
 When the sandbox cannot reach Neon directly, apply migration SQL through the Neon MCP connector (`run_sql_transaction`) and record the migration hash in `drizzle.__drizzle_migrations` exactly as `scripts/migrate.ts` would.
@@ -38,7 +39,7 @@ When the sandbox cannot reach Neon directly, apply migration SQL through the Neo
 ## Layout
 
 - `src/app/(app)/*` pages behind auth: home (Orbit view, Today, Meetings, Coming up, clients ledger, recent activity), tasks, clients, clients/[id] (timeline, dates, meetings, tasks, people, notes), activity, settings. Phase 2 still adds dates and inbox. Phase 3 adds friday and `/api/v1`. Phase 4 adds documents and ask.
-- Meetings: `src/lib/data/meetings.ts` and `src/lib/ai/mom.ts`. A planned meeting whose time has passed asks for the transcript. `buildMinutes` drafts a `MinutesPlan` in the client's `mom_format` (or `DEFAULT_MOM_FORMAT`), `saveMinutes` writes the MOM, action items, tasks linked to the meeting, a decision activity, a mom document and the rewritten client notes. Nothing is saved before Saaqib reviews it.
+- Meetings: `src/lib/data/meetings.ts` and `src/lib/ai/mom.ts`. A planned meeting whose time has passed asks for the transcript. `buildMinutes` drafts a `MinutesPlan` (title, location, objective, discussion points with a bold topic each, action points, plus decisions, tasks, date moves, health, next step, notes rewrite). Every client uses the same MOM layout, `STANDARD_MOM_FORMAT` in `src/lib/core/minutes.ts`, taken from Saaqib's ADFH x Fero Maqta Pay example; `clients.mom_format` holds only extra rules for that client. `saveMinutes` stores the structured minutes in `meetings.minutes`, the text twin from `renderMinutesText` in `meetings.mom` and a mom document, action items, tasks linked to the meeting, a decision activity and the rewritten client notes. `GET /api/meetings/[id]/docx` returns the Word file built by `src/lib/docs/momDocx.ts` (docx package, Times New Roman, navy headings, gold rules, action table). Nothing is saved before Saaqib reviews it.
 - Tasks: `/tasks` groups open tasks into Today (drag to order), Overdue, This week, Later, No date, Waiting on others, Done today. `parseTaskLine` in `src/lib/ai/taskline.ts` reads client, date, waiting on and priority from one typed line without a network call.
 - `src/lib/db/schema.ts` full schema for all phases. `src/lib/data/*` data access. `src/actions/*` server actions (validate with zod, call data layer, `revalidatePath`).
 - `src/lib/ai/*` Claude client and Quick Log parser. `src/lib/core/*` constants, Dubai date helpers, writing style, text matching.

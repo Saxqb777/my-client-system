@@ -5,14 +5,13 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { setClientNotesAction, setMomFormatAction } from "@/actions/meetings";
-import { DEFAULT_MOM_FORMAT } from "@/lib/ai/mom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/aurora/Panel";
 
 /**
  * Two living documents per client. Notes: what Orbit knows, updated after every transcript and by hand.
- * MOM format: how this client's minutes must look.
+ * MOM rules: anything this client needs on top of the standard minutes layout.
  */
 export function NotesPanel({ clientId, notes, momFormat }: { clientId: string; notes: string | null; momFormat: string | null }) {
   return (
@@ -26,12 +25,12 @@ export function NotesPanel({ clientId, notes, momFormat }: { clientId: string; n
         rows={14}
       />
       <Editor
-        title="MOM format"
-        hint="How this client's minutes must be written. Leave empty to use the Orbit default shown as placeholder."
+        title="MOM rules"
+        hint="Every client gets the same MOM layout: heading, objective, discussion points, action table, exported as Word. Add anything specific to this client here."
         initial={momFormat ?? ""}
-        placeholder={DEFAULT_MOM_FORMAT}
+        placeholder="For example: call the system DASH, write Al Etihad Drug Store in full once, keep points under three sentences."
         save={(v) => setMomFormatAction(clientId, v)}
-        rows={10}
+        rows={5}
       />
     </div>
   );

@@ -5,8 +5,11 @@ import { TaskRow } from "@/components/tasks/TaskRow";
 
 /** The short version of the tasks page: what is late, what is due today, who you are waiting on. */
 export function TodayPanel({ data }: { data: Dashboard }) {
-  const rows = [...data.overdueTasks, ...data.dueToday, ...data.waiting.filter((t) => !data.overdueTasks.some((o) => o.id === t.id))].slice(0, 8);
-  const count = data.overdueTasks.length + data.dueToday.length;
+  // One row per task: a waiting task due today is in both dueToday and waiting, so dedupe by id.
+  const seen = new Set<string>();
+  const rows = [...data.overdueTasks, ...data.dueToday, ...data.waiting].filter((t) => (seen.has(t.id) ? false : (seen.add(t.id), true))).slice(0, 8);
+  const dueToday = data.dueToday.filter((t) => !data.overdueTasks.some((o) => o.id === t.id)).length;
+  const count = data.overdueTasks.length + dueToday;
   return (
     <Panel
       title="Today"
@@ -28,8 +31,8 @@ export function TodayPanel({ data }: { data: Dashboard }) {
           {count > 0 && (
             <p className="mb-1 text-[12px] text-muted">
               {data.overdueTasks.length ? `${data.overdueTasks.length} overdue` : ""}
-              {data.overdueTasks.length && data.dueToday.length ? ", " : ""}
-              {data.dueToday.length ? `${data.dueToday.length} due today` : ""}
+              {data.overdueTasks.length && dueToday ? ", " : ""}
+              {dueToday ? `${dueToday} due today` : ""}
             </p>
           )}
           <ul>

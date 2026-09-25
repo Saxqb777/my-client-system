@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarPlus, Copy, MoreHorizontal } from "lucide-react";
+import { CalendarPlus, Copy, FileDown, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import type { Meeting, Person } from "@/lib/db/schema";
 import { deleteMeetingAction, updateMeetingAction } from "@/actions/meetings";
@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 
 type Tone = "upcoming" | "needs" | "past";
 
-function MeetingRow({ m, tone, clientName, pending, onEdit, onMinutes, onCancel, onDelete }: { m: Meeting; tone: Tone; clientName: string; pending: boolean; onEdit: () => void; onMinutes: () => void; onCancel: () => void; onDelete: () => void }) {
+function MeetingRow({ m, tone, pending, onEdit, onMinutes, onCancel, onDelete }: { m: Meeting; tone: Tone; pending: boolean; onEdit: () => void; onMinutes: () => void; onCancel: () => void; onDelete: () => void }) {
   const [openMom, setOpenMom] = useState(false);
   function copy(text: string) {
     navigator.clipboard.writeText(text).then(() => toast.success("Minutes copied"));
@@ -37,14 +37,19 @@ function MeetingRow({ m, tone, clientName, pending, onEdit, onMinutes, onCancel,
               <Button size="sm" onClick={onMinutes}>
                 Add the transcript
               </Button>
-              <span className="text-[12px] text-muted">Orbit drafts the minutes in {clientName}&apos;s format.</span>
+              <span className="text-[12px] text-muted">Orbit drafts the minutes and builds the Word file.</span>
             </div>
           )}
           {tone === "past" && m.mom && (
             <div className="mt-2">
-              <button type="button" className="link text-[13px]" onClick={() => setOpenMom((v) => !v)}>
-                {openMom ? "Hide minutes" : "Show minutes"}
-              </button>
+              <div className="flex flex-wrap items-center gap-4">
+                <a href={`/api/meetings/${m.id}/docx`} className="link inline-flex items-center gap-1.5 text-[13px]" download>
+                  <FileDown className="size-3.5" /> Download Word
+                </a>
+                <button type="button" className="link text-[13px]" onClick={() => setOpenMom((v) => !v)}>
+                  {openMom ? "Hide minutes" : "Show minutes"}
+                </button>
+              </div>
               {openMom && (
                 <div className="mt-2 border-l-2 border-border pl-4">
                   <pre className="whitespace-pre-wrap font-sans text-[13.5px] leading-relaxed text-text">{m.mom}</pre>
@@ -82,7 +87,7 @@ function MeetingRow({ m, tone, clientName, pending, onEdit, onMinutes, onCancel,
   );
 }
 
-export function MeetingsPanel({ clientId, clientName, meetings, people, now }: { clientId: string; clientName: string; meetings: Meeting[]; people: Person[]; now: number }) {
+export function MeetingsPanel({ clientId, clientCode, clientName, meetings, people, now }: { clientId: string; clientCode: string; clientName: string; meetings: Meeting[]; people: Person[]; now: number }) {
   const router = useRouter();
   const [pending, start] = useTransition();
   const [form, setForm] = useState<false | Meeting | "new">(false);
@@ -106,7 +111,6 @@ export function MeetingsPanel({ clientId, clientName, meetings, people, now }: {
   const rowProps = (m: Meeting, tone: Tone) => ({
     m,
     tone,
-    clientName,
     pending,
     onEdit: () => setForm(m),
     onMinutes: () => setMinutesFor(m),
@@ -161,7 +165,7 @@ export function MeetingsPanel({ clientId, clientName, meetings, people, now }: {
       )}
 
       <MeetingForm clientId={clientId} people={people} open={form !== false} onOpenChange={(v) => !v && setForm(false)} meeting={form === "new" ? null : form || null} />
-      {minutesFor && <MinutesBuilder key={minutesFor.id} meeting={minutesFor} clientName={clientName} open onOpenChange={(v) => !v && setMinutesFor(null)} />}
+      {minutesFor && <MinutesBuilder key={minutesFor.id} meeting={minutesFor} clientCode={clientCode} clientName={clientName} open onOpenChange={(v) => !v && setMinutesFor(null)} />}
     </div>
   );
 }

@@ -104,6 +104,15 @@ export type ActionItem = {
   taskId?: string;
 };
 
+/** One discussion point in the standard MOM: a short bold topic and the prose under it. */
+export type DiscussionPoint = { topic: string; text: string };
+
+/** The structured minutes behind the MOM text and the Word file. Action points live in action_items. */
+export type MinutesBody = {
+  objective: string;
+  points: DiscussionPoint[];
+};
+
 export type ReportRow = {
   clientId: string;
   client: string;
@@ -190,6 +199,7 @@ export const meetings = pgTable(
       .default(sql`'[]'::jsonb`),
     rawNotes: text("raw_notes"),
     mom: text("mom"),
+    minutes: jsonb("minutes").$type<MinutesBody>(),
     actionItems: jsonb("action_items")
       .$type<ActionItem[]>()
       .notNull()
