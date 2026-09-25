@@ -42,9 +42,9 @@ export function CommandPalette({
       <DialogContent hideClose className="top-[12%] max-w-xl translate-y-0 p-0 sm:top-[18%]">
         <DialogTitle className="sr-only">Command palette</DialogTitle>
         <Command shouldFilter={!canLog || true} loop>
-          <CommandInput value={query} onValueChange={setQuery} placeholder="Type an update, a client, or a page…" />
+          <CommandInput value={query} onValueChange={setQuery} placeholder="Type an update, a client or a page" />
           <CommandList>
-            <CommandEmpty>Nothing matches. Press Enter to log it as an update.</CommandEmpty>
+            <CommandEmpty>No match. Press Enter to log it as an update.</CommandEmpty>
             {canLog && (
               <CommandGroup heading="Quick log">
                 <CommandItem value={`log ${query}`} onSelect={() => onLog(query)} className="data-[selected=true]:bg-[color-mix(in_oklab,var(--teal)_14%,transparent)]">

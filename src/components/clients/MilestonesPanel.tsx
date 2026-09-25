@@ -46,7 +46,7 @@ export function MilestonesPanel({ clientId, milestones }: { clientId: string; mi
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted">
-          {upcoming.length} upcoming · {finished.length} done
+          {upcoming.length} upcoming, {finished.length} done
         </p>
         <Button size="sm" variant="secondary" onClick={() => { setForm({ title: "", type: "target", date: "" }); setAdding(true); }}>
           <CalendarPlus /> Add date
@@ -54,7 +54,7 @@ export function MilestonesPanel({ clientId, milestones }: { clientId: string; mi
       </div>
 
       {milestones.length === 0 ? (
-        <EmptyState title="No dates yet" hint="Add target, SIT, UAT, go live and system dates. Orbit counts down to each and flags slips." compact />
+        <EmptyState title="No dates yet" hint="Add target, SIT, UAT, go live and system dates." compact />
       ) : (
         <>
           <ul className="space-y-2">
@@ -64,7 +64,7 @@ export function MilestonesPanel({ clientId, milestones }: { clientId: string; mi
           </ul>
           {finished.length > 0 && (
             <div>
-              <p className="eyebrow mb-2">Completed</p>
+              <p className="mb-2 text-xs font-medium text-muted">Completed</p>
               <ul className="space-y-2 opacity-80">
                 {finished.map((m) => (
                   <Row key={m.id} m={m} onReopen={() => run(() => updateMilestoneAction(m.id, { status: "upcoming" }))} onDelete={() => run(() => deleteMilestoneAction(m.id))} />

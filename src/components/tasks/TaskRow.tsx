@@ -67,7 +67,7 @@ export function TaskRow({ task, client, showClient = true, compact }: { task: Ta
           {task.status === "waiting" && !done && (
             <span className="pill pill-warn !py-0 !text-[11px]">
               <Hourglass className="size-3" /> Waiting on {task.waitingOn ?? "someone"}
-              {waitingDays !== null && waitingDays > 0 ? ` · ${waitingDays}d` : ""}
+              {waitingDays !== null && waitingDays > 0 ? `, ${waitingDays} ${waitingDays === 1 ? "day" : "days"}` : ""}
             </span>
           )}
           {task.dueDate && !done && (

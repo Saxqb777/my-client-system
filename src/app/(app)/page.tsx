@@ -1,6 +1,6 @@
 import { getDashboard } from "@/lib/data/dashboard";
 import { getOwnerName } from "@/lib/data/settings";
-import { GlassCard, CardEyebrow, CardTitle } from "@/components/aurora/GlassCard";
+import { GlassCard, CardTitle } from "@/components/aurora/GlassCard";
 import { HeroSummary } from "@/components/home/HeroSummary";
 import { OrbitView } from "@/components/home/OrbitView";
 import { FocusPanel } from "@/components/home/FocusPanel";
@@ -12,20 +12,21 @@ export default async function HomePage() {
   const [data, ownerName] = await Promise.all([getDashboard(), getOwnerName()]);
   const counts = { on_track: 0, at_risk: 0, blocked: 0 };
   for (const c of data.clients) counts[c.health]++;
-  const attention = data.overdueTasks.length + data.overdueMilestones.length + data.dueToday.length + counts.blocked;
+  const overdue = data.overdueTasks.length + data.overdueMilestones.length;
 
   return (
     <div className="animate-fade-up">
-      <HeroSummary ownerName={ownerName} counts={counts} attention={attention} />
+      <HeroSummary ownerName={ownerName} counts={counts} dueToday={data.dueToday.length} overdue={overdue} />
 
       <div className="grid gap-5 lg:grid-cols-12">
         <GlassCard className="lg:col-span-7">
           <div className="mb-2 flex items-end justify-between">
             <div>
-              <CardEyebrow>Orbit view</CardEyebrow>
-              <CardTitle className="mt-1">Every client, in one glance</CardTitle>
+              <CardTitle>Orbit view</CardTitle>
+              <p className="mt-1 text-sm text-muted">
+                {data.clients.length} active {data.clients.length === 1 ? "client" : "clients"}
+              </p>
             </div>
-            <p className="hidden text-[11px] text-muted sm:block">Size: activity in 14 days · Colour: health · Ring: distance to go live</p>
           </div>
           <OrbitView
             clients={data.clients.map((c) => ({

@@ -77,9 +77,9 @@ export function ClientHeader({ client }: { client: Client }) {
             </DropdownMenu>
             <h1 className="font-display truncate text-[30px] font-semibold leading-none sm:text-[38px]">{client.name}</h1>
           </div>
-          <p className="mt-2 text-sm text-muted">
-            {client.fullName && client.fullName !== client.name ? `${client.fullName} · ` : ""}
-            Owner {client.owner}
+          <p className="mt-2 flex flex-wrap items-center gap-x-3 text-sm text-muted">
+            {client.fullName && client.fullName !== client.name && <span>{client.fullName}</span>}
+            <span>Owner: {client.owner}</span>
           </p>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -105,7 +105,7 @@ export function ClientHeader({ client }: { client: Client }) {
           </div>
 
           <div className="mt-5">
-            <p className="eyebrow mb-1.5">Next step</p>
+            <p className="mb-1.5 text-xs font-medium text-muted">Next step</p>
             {editingNext ? (
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
                 <Textarea autoFocus value={nextDraft} onChange={(e) => setNextDraft(e.target.value)} className="min-h-[64px] max-w-xl" onKeyDown={(e) => { if (e.key === "Escape") setEditingNext(false); if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { patch({ nextStep: nextDraft }, "Next step saved"); setEditingNext(false); } }} />
@@ -120,7 +120,7 @@ export function ClientHeader({ client }: { client: Client }) {
               </div>
             ) : (
               <button type="button" onClick={() => { setNextDraft(client.nextStep ?? ""); setEditingNext(true); }} className="group flex max-w-xl items-start gap-2 text-left">
-                <span className={cn("text-[15px] leading-snug", client.nextStep ? "text-text" : "text-faint")}>{client.nextStep || "Set the next move for this client"}</span>
+                <span className={cn("text-[15px] leading-snug", client.nextStep ? "text-text" : "text-faint")}>{client.nextStep || "Set the next step"}</span>
                 <Pencil className="mt-1 size-3.5 shrink-0 text-faint opacity-0 transition group-hover:opacity-100" />
               </button>
             )}
@@ -164,7 +164,7 @@ export function ClientHeader({ client }: { client: Client }) {
           <div className="glass-inset flex items-center gap-4 p-3.5">
             {left !== null ? <CountdownRing daysLeft={left} span={totalDays} size={64} stroke={5} caption="days" /> : <div className="flex size-16 items-center justify-center rounded-full border border-dashed border-border-strong text-[10px] text-faint">no target</div>}
             <div className="text-sm">
-              <p className="eyebrow">Current phase</p>
+              <p className="text-xs font-medium text-muted">Current phase</p>
               <p className="mt-1 text-text">
                 <span className="num">{client.phaseStartDate ? formatDate(client.phaseStartDate) : "Start not set"}</span>
                 <span className="text-muted"> to </span>

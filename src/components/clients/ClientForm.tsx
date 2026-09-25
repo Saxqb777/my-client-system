@@ -89,7 +89,7 @@ export function ClientForm({ open, onOpenChange, client }: { open: boolean; onOp
       <SheetContent>
         <SheetHeader>
           <SheetTitle>{editing ? `Edit ${client!.name}` : "New client"}</SheetTitle>
-          <SheetDescription>{editing ? "Change anything. Status changes are logged on the timeline." : "A short code helps Quick Log match updates to this client."}</SheetDescription>
+          <SheetDescription>{editing ? "Status changes are logged on the timeline." : "The short code is how Quick Log matches updates to this client."}</SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 space-y-5">

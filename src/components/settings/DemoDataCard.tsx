@@ -21,7 +21,7 @@ export function DemoDataCard({ loaded }: { loaded: boolean }) {
           Demo data {loaded ? <Badge tone="violet">Loaded</Badge> : <Badge>Not loaded</Badge>}
         </p>
         <p className="mt-1 max-w-md text-xs text-muted">
-          Sample activities, dates, tasks and people on your eight clients so you can explore Orbit. Clearing keeps the client names and removes everything marked demo.
+          Sample activities, dates, tasks and people on the eight clients. Clearing keeps the client names and removes everything marked demo.
         </p>
       </div>
       <div className="flex gap-2">

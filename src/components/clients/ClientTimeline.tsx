@@ -39,7 +39,7 @@ export function ClientTimeline({ clientId, clientCode, activities }: { clientId:
         <Textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="What happened? Keep it short."
+          placeholder="Log an update"
           className="min-h-[64px] border-0 bg-transparent px-1 focus:shadow-none"
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === "Enter") submit();
@@ -68,7 +68,7 @@ export function ClientTimeline({ clientId, clientCode, activities }: { clientId:
           </div>
         </div>
       </div>
-      <ActivityFeed activities={activities} showClient={false} emptyHint="Log the first update above. Health, phase and date changes are added here automatically." />
+      <ActivityFeed activities={activities} showClient={false} emptyHint="Health, phase and date changes are added here automatically." />
     </div>
   );
 }

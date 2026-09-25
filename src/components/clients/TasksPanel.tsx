@@ -67,20 +67,20 @@ export function TasksPanel({ clientId, tasks }: { clientId: string; tasks: Task[
       </div>
 
       {tasks.length === 0 ? (
-        <EmptyState title="No tasks" hint="Add follow ups here, or let Quick Log create them from your updates." compact />
+        <EmptyState title="No tasks" hint="Add follow ups here or through Quick Log." compact />
       ) : (
         <div className="space-y-5">
           <Group title="Open" n={open.length}>
             {open.map((t) => (
               <TaskRow key={t.id} task={t} showClient={false} />
             ))}
-            {open.length === 0 && <li className="py-2 text-[13px] text-muted">Nothing open.</li>}
+            {open.length === 0 && <li className="py-2 text-[13px] text-muted">No open tasks</li>}
           </Group>
           <Group title="Waiting on others" n={waiting.length}>
             {waiting.map((t) => (
               <TaskRow key={t.id} task={t} showClient={false} />
             ))}
-            {waiting.length === 0 && <li className="py-2 text-[13px] text-muted">Not waiting on anyone.</li>}
+            {waiting.length === 0 && <li className="py-2 text-[13px] text-muted">No waiting items</li>}
           </Group>
           {done.length > 0 && (
             <div>

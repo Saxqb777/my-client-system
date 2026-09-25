@@ -23,10 +23,10 @@ export function ClientCard({ client }: { client: ClientSummary }) {
             <h3 className="font-display truncate text-[19px] font-semibold text-text">{client.name}</h3>
             <span className="num rounded-md border border-border px-1.5 py-0.5 text-[10px] text-muted">{client.code}</span>
           </div>
-          <p className="mt-0.5 truncate text-xs text-muted">
-            {client.fullName && client.fullName !== client.name ? `${client.fullName} · ` : ""}
-            {phaseLabel(client.phase)}
-            {client.archivedAt ? " · Archived" : ""}
+          <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted">
+            <span className="pill !py-0 !text-[11px]">{phaseLabel(client.phase)}</span>
+            {client.fullName && client.fullName !== client.name && <span className="truncate">{client.fullName}</span>}
+            {client.archivedAt && <span className="pill !py-0 !text-[11px]">Archived</span>}
           </p>
         </div>
       </div>
@@ -52,10 +52,10 @@ export function ClientCard({ client }: { client: ClientSummary }) {
             </div>
           </>
         ) : (
-          <div className="flex-1 text-[12px] text-faint">No upcoming dates</div>
+          <div className="flex-1 text-[12px] text-faint">No upcoming date</div>
         )}
         <div className="text-right text-[11px] text-muted">
-          <p className="num">{client.activityCount14d} updates · 14d</p>
+          <p>{client.activityCount14d} updates in 14 days</p>
           {client.waitingTasks > 0 ? (
             <p className="inline-flex items-center gap-1 text-warn">
               <Hourglass className="size-3" /> waiting on {client.waitingTasks}

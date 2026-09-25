@@ -20,10 +20,7 @@ export function Sidebar({ ownerName }: { ownerName: string }) {
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[232px] flex-col border-r border-border bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] px-4 py-5 backdrop-blur-xl lg:flex">
       <Link href="/" className="flex items-center gap-3 px-2">
         <OrbitMark size={34} />
-        <div>
-          <p className="font-display text-[20px] font-semibold leading-none">Orbit</p>
-          <p className="mt-1 text-[11px] text-muted">Work command center</p>
-        </div>
+        <p className="font-display text-[20px] leading-none">Orbit</p>
       </Link>
 
       <button

@@ -12,7 +12,7 @@ export default async function ClientsPage() {
   const archived = all.filter((c) => c.archivedAt);
   return (
     <div className="animate-fade-up">
-      <PageHeader eyebrow="Accounts" title="Clients" description="Every account you run, with its phase, health and the next move. Blocked and at risk float to the top." />
+      <PageHeader title="Clients" description={`${active.length} active${archived.length ? `, ${archived.length} archived` : ""}`} />
       <Suspense>
         <ClientsGrid clients={active} archived={archived} />
       </Suspense>

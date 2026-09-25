@@ -30,6 +30,9 @@ Running memory for Orbit. Newest entries at the top of each section. Update this
 
 ## Decisions
 
+- 2026-09-25 Design pass 2 after Saaqib's first live look. He liked the concept but the wording and the round glow blobs read as AI generated. Chosen: fonts option A (Manrope, Inter, JetBrains Mono), background option 1 (aurora curtains along the top, faint stars, dark below), calmer glass, plain copy with no mono uppercase labels and no middle dot separators. Previews of the options live in the session scratchpad only.
+- 2026-09-25 Real client list will come from Saaqib's project chats via the data collection prompt. When loaded, every seeded client not in his list is deleted.
+
 - 2026-09-24 Friday pack is generated Thursday evening Abu Dhabi time, not Friday morning. Reporting week runs Friday to Thursday (Dubai). Exact cron time to confirm with Saaqib in Phase 3 (proposal: 20:00 Dubai = 16:00 UTC Thursday, Hobby cron fires within the hour).
 - 2026-09-24 Friday table format is fixed by Saaqib: Client | Owner | Done this week | Risk / Delay | Next week action | Start date | Target date. Cells short and action oriented. Editable review grid before saving. Exports: tab separated, clean text, PDF.
 - 2026-09-24 Data model: `clients.owner`, `phase_start_date`, `phase_target_date`, `phase_target_original` support the Friday columns and slip detection. Milestones carry `original_date` and `date_history`.
@@ -42,11 +45,13 @@ Running memory for Orbit. Newest entries at the top of each section. Update this
 
 - Short messages, bullets, explain only when asked.
 - Never implement without a final confirmation.
-- Not a corporate look. Aurora: deep navy base, teal / violet / magenta glows, glass cards, glowing health orbs, countdown rings, Bricolage Grotesque headings, Geist body, Geist Mono numbers.
+- Not a corporate look, but not "AI template" either. Aurora: deep navy base, teal, violet and magenta light curtains along the top, glass cards, glowing health orbs, countdown rings. Manrope headings, Inter body, JetBrains Mono numbers. Plain factual copy.
 - Wants AI to help with next steps and learn his way of working over time (Copilot in Phase 2, style memory in Phase 4).
 - He judges changes after using them live; deploy early, then iterate on his feedback.
 
 ## Open items
+
+- Saaqib is collecting real project data with the JSON prompt. Import each block when it arrives, then delete seeded clients not in his list.
 
 - Confirm Friday cron time (Thursday evening).
 - Phase 1 feedback after live use.

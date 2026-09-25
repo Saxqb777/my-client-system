@@ -93,12 +93,12 @@ export function OrbitView({ clients }: { clients: OrbitClient[] }) {
         {/* Rings with tick marks, like a star chart */}
         {([3, 2, 1] as const).map((ring) => (
           <g key={ring}>
-            <circle cx={C} cy={C} r={RINGS[ring].r} fill="none" stroke="var(--border-strong)" strokeWidth={1} strokeDasharray={ring === 3 ? "2 6" : undefined} />
+            <circle cx={C} cy={C} r={RINGS[ring].r} fill="none" stroke="var(--border)" strokeWidth={1} strokeDasharray={ring === 3 ? "2 6" : undefined} />
             {Array.from({ length: ring === 1 ? 12 : ring === 2 ? 24 : 36 }).map((_, i) => {
               const a = ((360 / (ring === 1 ? 12 : ring === 2 ? 24 : 36)) * i * Math.PI) / 180;
               const r1 = RINGS[ring].r - 3;
               const r2 = RINGS[ring].r + 3;
-              return <line key={i} x1={rd(C + r1 * Math.cos(a))} y1={rd(C + r1 * Math.sin(a))} x2={rd(C + r2 * Math.cos(a))} y2={rd(C + r2 * Math.sin(a))} stroke="var(--border)" strokeWidth={1} />;
+              return <line key={i} x1={rd(C + r1 * Math.cos(a))} y1={rd(C + r1 * Math.sin(a))} x2={rd(C + r2 * Math.cos(a))} y2={rd(C + r2 * Math.sin(a))} stroke="var(--border)" strokeWidth={1} opacity={0.6} />;
             })}
           </g>
         ))}
@@ -182,9 +182,11 @@ export function OrbitView({ clients }: { clients: OrbitClient[] }) {
               <p className="font-display text-[15px] font-semibold">{hover.name}</p>
               <span className="num ml-auto text-[11px] text-muted">{hover.code}</span>
             </div>
-            <p className="mt-1 text-xs text-muted">
-              {phaseLabel(hover.phase)} · {HEALTH[hover.health].label} · {hover.activityCount14d} updates in 14 days
-            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="pill !py-0.5 !text-[11px]">{phaseLabel(hover.phase)}</span>
+              <span className={cn("pill !py-0.5 !text-[11px]", `pill-${HEALTH[hover.health].css}`)}>{HEALTH[hover.health].label}</span>
+              <span className="text-[11px] text-muted">{hover.activityCount14d} updates in 14 days</span>
+            </div>
             {hover.nextStep && <p className="mt-2 text-[13px] text-text-2">Next: {hover.nextStep}</p>}
             {hover.nextMilestone && (
               <p className="mt-1 text-[12px] text-teal">
@@ -195,9 +197,13 @@ export function OrbitView({ clients }: { clients: OrbitClient[] }) {
         )}
       </AnimatePresence>
 
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-3 text-[11px] text-muted">
-        <p>Inner ring: going live · Middle: building and testing · Outer: shaping scope</p>
-        <div className="flex items-center gap-3">
+      <div className="mt-3 flex flex-col gap-2 text-[12px] text-muted sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <span className="inline-flex items-center gap-1.5"><RingMark size={8} /> Inner ring: go live</span>
+          <span className="inline-flex items-center gap-1.5"><RingMark size={11} /> Middle: build and test</span>
+          <span className="inline-flex items-center gap-1.5"><RingMark size={14} dashed /> Outer: scope</span>
+        </div>
+        <div className="flex items-center gap-4">
           {(["on_track", "at_risk", "blocked"] as Health[]).map((h) => (
             <span key={h} className="inline-flex items-center gap-1.5">
               <span className={cn("orb !size-2", `orb-${HEALTH[h].css}`)} /> {HEALTH[h].label}
@@ -206,5 +212,14 @@ export function OrbitView({ clients }: { clients: OrbitClient[] }) {
         </div>
       </div>
     </div>
+  );
+}
+
+function RingMark({ size, dashed }: { size: number; dashed?: boolean }) {
+  return (
+    <span
+      className="inline-block rounded-full border border-muted/70"
+      style={{ width: size, height: size, borderStyle: dashed ? "dashed" : "solid" }}
+    />
   );
 }

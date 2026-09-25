@@ -57,7 +57,7 @@ export function PeoplePanel({ clientId, people }: { clientId: string; people: Pe
         </Button>
       </div>
       {people.length === 0 ? (
-        <EmptyState title="No people yet" hint="Add the key contacts: sponsor, IT lead, vendor PM. Quick Log can then recognise them." compact />
+        <EmptyState title="No people yet" hint="Add the key contacts: sponsor, IT lead, vendor PM." compact />
       ) : (
         <ul className="grid gap-3 sm:grid-cols-2">
           {people.map((p) => (
@@ -68,8 +68,9 @@ export function PeoplePanel({ clientId, people }: { clientId: string; people: Pe
                   {p.name}
                   {p.isPrimary && <Star className="size-3.5 fill-warn text-warn" />}
                 </p>
-                <p className="text-xs text-muted">
-                  {p.role || "Role not set"} · <Badge className="!py-0 !text-[10px]">{p.side}</Badge>
+                <p className="flex items-center gap-2 text-xs text-muted">
+                  <span>{p.role || "Role not set"}</span>
+                  <Badge className="!py-0 !text-[10px]">{p.side}</Badge>
                 </p>
                 <div className="mt-1.5 flex flex-wrap gap-3 text-[12px]">
                   {p.email && (

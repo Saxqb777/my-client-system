@@ -37,7 +37,7 @@ export function QuickLogBar({ className }: { className?: string }) {
       <input
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder={`Log anything: "${EXAMPLES[i]}"`}
+        placeholder={`Log an update, for example: ${EXAMPLES[i]}`}
         aria-label="Quick log"
         className="field h-10 rounded-full pl-10 pr-24 text-[14px] shadow-[0_0_0_0_transparent] transition focus:shadow-[0_10px_40px_-18px_var(--teal)]"
       />

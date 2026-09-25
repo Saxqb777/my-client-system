@@ -17,7 +17,7 @@ export function GlassCard({ className, hover, padded = true, as: Tag = "div", ..
 }
 
 export function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={cn("font-display text-[17px] font-semibold text-text", className)} {...props} />;
+  return <h3 className={cn("font-display text-[17px] text-text", className)} {...props} />;
 }
 
 export function CardEyebrow({ className, ...props }: React.HTMLAttributes<HTMLParagraphElement>) {

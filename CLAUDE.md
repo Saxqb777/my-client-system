@@ -12,6 +12,8 @@ Never implement, change, or deploy anything without Saaqib's explicit confirmati
 
 No hyphens, en dashes or em dashes as punctuation. Colons are fine. Do not hyphenate compound words: write sign off, go live, follow up. Short, clean, action oriented. `cleanStyle()` in `src/lib/core/style.ts` enforces this on AI output; `WRITING_STYLE_RULES` goes into every prompt.
 
+The same applies to UI copy. Saaqib rejected the first pass as "AI vibe", so: no mono uppercase section labels, no middle dot separators, no chatty lines ("Nothing overdue. Good."), no marketing intros under page titles. Plain factual sentences and counts. Fonts are Manrope (headings), Inter (body), JetBrains Mono (dates and numbers). Background is aurora curtains along the top edge only, never round glow blobs.
+
 ## Stack
 
 - Next.js 16 (App Router, `src/proxy.ts` instead of middleware), TypeScript, Tailwind v4, Radix primitives restyled as the Aurora design system, Motion for animation.

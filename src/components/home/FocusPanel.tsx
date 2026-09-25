@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AlertTriangle, CalendarClock, Hourglass, Sun } from "lucide-react";
 import type { Dashboard } from "@/lib/data/dashboard";
 import { countdownLabel, daysUntil } from "@/lib/core/dates";
-import { GlassCard, CardEyebrow, CardTitle } from "@/components/aurora/GlassCard";
+import { GlassCard, CardTitle } from "@/components/aurora/GlassCard";
 import { TaskRow } from "@/components/tasks/TaskRow";
 import { cn } from "@/lib/utils";
 
@@ -17,8 +17,8 @@ export function FocusPanel({ data }: { data: Dashboard }) {
     <GlassCard className="flex h-full flex-col">
       <div className="flex items-start justify-between">
         <div>
-          <CardEyebrow>Today&apos;s focus</CardEyebrow>
-          <CardTitle className="mt-1">What needs you</CardTitle>
+          <CardTitle>Today</CardTitle>
+          <p className="mt-1 text-sm text-muted">Overdue, due today and waiting on others</p>
         </div>
         <span className="flex size-9 items-center justify-center rounded-full border border-border bg-surface text-warn">
           <Sun className="size-4" />
@@ -44,21 +44,21 @@ export function FocusPanel({ data }: { data: Dashboard }) {
           {data.overdueTasks.map((t) => (
             <TaskRow key={t.id} task={t} client={t.client} compact />
           ))}
-          {overdueCount === 0 && <Empty>Nothing overdue. Good.</Empty>}
+          {overdueCount === 0 && <Empty>No overdue items</Empty>}
         </Block>
 
         <Block icon={<CalendarClock className="size-3.5" />} title="Due today" count={data.dueToday.length} tone="warn">
           {data.dueToday.map((t) => (
             <TaskRow key={t.id} task={t} client={t.client} compact />
           ))}
-          {data.dueToday.length === 0 && <Empty>No tasks due today.</Empty>}
+          {data.dueToday.length === 0 && <Empty>No tasks due today</Empty>}
         </Block>
 
         <Block icon={<Hourglass className="size-3.5" />} title="Waiting on others" count={data.waiting.length} tone="neutral">
           {oldestWaiting.map(({ t }) => (
             <TaskRow key={t.id} task={t} client={t.client} compact />
           ))}
-          {data.waiting.length === 0 && <Empty>You are not waiting on anyone.</Empty>}
+          {data.waiting.length === 0 && <Empty>No waiting items</Empty>}
         </Block>
       </div>
     </GlassCard>

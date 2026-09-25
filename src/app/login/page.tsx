@@ -17,17 +17,14 @@ export default async function LoginPage({
       <div className="w-full max-w-sm animate-fade-up">
         <div className="mb-8 flex items-center gap-3">
           <OrbitMark />
-          <div>
-            <p className="font-display text-2xl font-semibold leading-none">Orbit</p>
-            <p className="mt-1 text-xs text-muted">Your work, in one place</p>
-          </div>
+          <p className="font-display text-2xl leading-none">Orbit</p>
         </div>
         <div className="glass p-6">
-          <h1 className="font-display text-xl font-semibold">Welcome back</h1>
-          <p className="mt-1 text-sm text-muted">Enter your password to open your command center.</p>
+          <h1 className="font-display text-xl">Sign in</h1>
+          <p className="mt-1 text-sm text-muted">Enter your password.</p>
           <LoginForm next={next} />
         </div>
-        <p className="mt-6 text-center text-xs text-faint">Single user. Sessions last 30 days on this device.</p>
+        <p className="mt-6 text-center text-xs text-faint">Sessions last 30 days on this device.</p>
       </div>
     </main>
   );

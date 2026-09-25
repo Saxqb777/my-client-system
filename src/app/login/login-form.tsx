@@ -63,7 +63,7 @@ export function LoginForm({ next }: { next: string }) {
       )}
       <Button type="submit" size="lg" className="w-full" disabled={busy || !password}>
         {busy ? <Loader2 className="animate-spin" /> : null}
-        {busy ? "Opening Orbit" : "Open Orbit"}
+        {busy ? "Signing in" : "Sign in"}
       </Button>
     </form>
   );

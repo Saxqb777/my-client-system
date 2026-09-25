@@ -10,8 +10,8 @@ export function ThemeChoice() {
   const mounted = useMounted();
   const current = mounted ? theme : "dark";
   const options = [
-    { value: "dark", label: "Aurora dark", icon: Moon, desc: "Deep navy with drifting glows" },
-    { value: "light", label: "Aurora light", icon: Sun, desc: "Soft daylight, same glows as pastels" },
+    { value: "dark", label: "Dark", icon: Moon, desc: "Navy with aurora light at the top" },
+    { value: "light", label: "Light", icon: Sun, desc: "Light with soft colour at the top" },
   ];
   return (
     <div className="grid gap-3 sm:grid-cols-2">

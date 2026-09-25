@@ -3,7 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import type { ClientSummary } from "@/lib/data/clients";
 import { HEALTH_ORDER, phaseLabel } from "@/lib/core/constants";
 import { countdownLabel } from "@/lib/core/dates";
-import { GlassCard, CardEyebrow, CardTitle } from "@/components/aurora/GlassCard";
+import { GlassCard, CardTitle } from "@/components/aurora/GlassCard";
 import { HealthOrb } from "@/components/aurora/HealthOrb";
 
 export function AttentionList({ clients }: { clients: ClientSummary[] }) {
@@ -13,16 +13,13 @@ export function AttentionList({ clients }: { clients: ClientSummary[] }) {
   return (
     <GlassCard>
       <div className="flex items-end justify-between">
-        <div>
-          <CardEyebrow>Needs attention</CardEyebrow>
-          <CardTitle className="mt-1">At risk and blocked</CardTitle>
-        </div>
+        <CardTitle>At risk and blocked</CardTitle>
         <Link href="/clients" className="link text-xs">
           All clients
         </Link>
       </div>
       {flagged.length === 0 ? (
-        <p className="mt-4 text-sm text-muted">Every client is on track.</p>
+        <p className="mt-4 text-sm text-muted">All clients on track</p>
       ) : (
         <ul className="mt-3 divide-y divide-border/60">
           {flagged.map((c) => (

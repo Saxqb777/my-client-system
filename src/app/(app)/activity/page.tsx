@@ -36,7 +36,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="animate-fade-up">
-      <PageHeader eyebrow="Log" title="Activity" description="Everything that happened, across every client. Even the small updates." />
+      <PageHeader title="Activity" />
       <Suspense>
         <ActivityFilters clients={clients.map((c) => ({ id: c.id, name: c.name, code: c.code, health: c.health }))} />
       </Suspense>

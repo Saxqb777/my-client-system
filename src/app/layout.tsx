@@ -1,31 +1,30 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Manrope } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
-  subsets: ["latin"],
-  axes: ["opsz", "wdth"],
-  display: "swap",
-});
-
-const geist = Geist({
-  variable: "--font-geist",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
   display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: { default: "Orbit", template: "%s · Orbit" },
-  description: "Saaqib's work command center: every client, every date, every next move.",
+  title: { default: "Orbit", template: "%s | Orbit" },
+  description: "Client tracking for Saaqib: phases, dates, activity, tasks and the Friday pack.",
   applicationName: "Orbit",
   appleWebApp: { capable: true, title: "Orbit", statusBarStyle: "black-translucent" },
 };
@@ -45,7 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${bricolage.variable} ${geist.variable} ${geistMono.variable} h-full`}
+      className={`${manrope.variable} ${inter.variable} ${jetbrainsMono.variable} h-full`}
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider>

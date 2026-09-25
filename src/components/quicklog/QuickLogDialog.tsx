@@ -108,7 +108,7 @@ export function QuickLogDialog({
         return;
       }
       toast.success(`Saved to ${res.data.client.name}`, {
-        description: res.data.lines.slice(0, 4).join(" · "),
+        description: res.data.lines.slice(0, 4).join(", "),
         icon: <Check className="size-4 text-teal" />,
       });
       onOpenChange(false);
@@ -129,8 +129,8 @@ export function QuickLogDialog({
             </DialogTitle>
             <DialogDescription>
               {stage === "preview"
-                ? "Check what Orbit understood. Edit anything, then save."
-                : "Write it the way you would text it. Orbit matches the client, logs the update, moves dates and creates follow ups."}
+                ? "Review, edit if needed, then save."
+                : "Type an update. Orbit finds the client, logs it, moves dates and adds follow ups."}
             </DialogDescription>
           </DialogHeader>
 
@@ -164,7 +164,7 @@ export function QuickLogDialog({
                   <span className="absolute inset-0 animate-ping rounded-full bg-teal/20" />
                   <Loader2 className="size-6 animate-spin text-teal" />
                 </span>
-                <p className="text-sm text-text-2">Reading your update…</p>
+                <p className="text-sm text-text-2">Reading the update</p>
                 <p className="max-w-sm text-xs text-muted">“{text}”</p>
               </motion.div>
             )}
@@ -175,9 +175,9 @@ export function QuickLogDialog({
 
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge tone={result.engine === "claude" ? "violet" : "neutral"}>
-                    <Bot className="size-3" /> {result.engine === "claude" ? "Understood by Claude" : "Rule based reading"}
+                    <Bot className="size-3" /> {result.engine === "claude" ? "Read by Claude" : "Read by rules"}
                   </Badge>
-                  {!result.aiConfigured && <span className="text-xs text-muted">Add ANTHROPIC_API_KEY for smarter parsing.</span>}
+                  {!result.aiConfigured && <span className="text-xs text-muted">Add ANTHROPIC_API_KEY to use Claude.</span>}
                   {plan.confidence !== "high" && clientId && <Badge tone="warn">Client match: {plan.confidence}</Badge>}
                 </div>
 

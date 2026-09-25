@@ -77,7 +77,7 @@ export function ClientsGrid({ clients, archived }: { clients: ClientSummary[]; a
         <div className="glass">
           <EmptyState
             title={filter === "archived" ? "No archived clients" : q ? "No clients match" : "No clients yet"}
-            hint={filter === "archived" ? "Archived clients stay searchable here." : "Add a client to start tracking phases, dates and updates."}
+            hint={filter === "archived" ? "Archived clients appear here." : "Add a client to start tracking."}
             action={
               filter !== "archived" && !q ? (
                 <Button onClick={() => setOpen(true)}>
