@@ -4,7 +4,7 @@ Running memory for Orbit. Newest entries at the top of each section. Update this
 
 ## Status
 
-- Phase 1: live with Saaqib's five real clients (RSA Talke, IDS DASH, ADSO TMS and Clearance, Agthia FMS, ADFH OMS). Tasks cleared and dates reduced to the eight key ones at his request. Design pass 3 (paper and ink) deployed. Awaiting his live feedback.
+- Phase 1: live with Saaqib's five real clients (RSA Talke, IDS DASH, ADSO TMS and Clearance, Agthia FMS, ADFH OMS). Tasks cleared and dates reduced to the eight key ones at his request. Design pass 3 (paper and ink) deployed 2026-09-25 and approved by Saaqib: "this looks clean". This is the design baseline from now on.
 - Phase 2: not started (tasks page, dates page, meetings and MOM, paste box, Copilot next moves).
 - Phase 3: not started (Friday pack in the 7 column format, cron, history, exports, REST API, CLAUDE commands).
 - Phase 4: not started (documents with search, /brd /qa /screens /email, Ask Orbit, style memory, PWA, polish).
