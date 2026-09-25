@@ -45,3 +45,6 @@ next-env.d.ts
 
 # screenshots
 /shots
+
+# real client exports, never commit
+/data/imports/
