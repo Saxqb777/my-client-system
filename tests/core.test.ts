@@ -15,6 +15,7 @@ const base: Omit<Client, "id" | "name" | "code" | "aliases" | "fullName"> = {
   phaseTargetOriginal: null,
   color: null,
   notes: null,
+      momFormat: null,
   sortOrder: 0,
   demoStatus: false,
   archivedAt: null,

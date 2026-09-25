@@ -19,20 +19,20 @@ function Item({ item, pathname }: { item: (typeof NAV)[number]; pathname: string
 export function MobileNav() {
   const pathname = usePathname();
   const quickLog = useQuickLog();
-  const [home, clients, activity, settings] = NAV;
+  const [home, tasks, clients, activity] = NAV;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-bg lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="flex items-stretch">
         <Item item={home} pathname={pathname} />
-        <Item item={clients} pathname={pathname} />
+        <Item item={tasks} pathname={pathname} />
         <button type="button" onClick={() => quickLog.open()} className="flex flex-1 items-center justify-center" aria-label="Log an update">
           <span className="flex size-9 items-center justify-center rounded-full bg-ink text-paper">
             <Plus className="size-4" />
           </span>
         </button>
+        <Item item={clients} pathname={pathname} />
         <Item item={activity} pathname={pathname} />
-        <Item item={settings} pathname={pathname} />
       </div>
     </nav>
   );

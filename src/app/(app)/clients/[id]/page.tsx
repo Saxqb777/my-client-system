@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getClient } from "@/lib/data/clients";
+import { nowMs } from "@/lib/core/dates";
 import { EmptyState } from "@/components/aurora/EmptyState";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientHeader } from "@/components/clients/ClientHeader";
@@ -10,6 +11,8 @@ import { ClientTimeline } from "@/components/clients/ClientTimeline";
 import { MilestonesPanel } from "@/components/clients/MilestonesPanel";
 import { TasksPanel } from "@/components/clients/TasksPanel";
 import { PeoplePanel } from "@/components/clients/PeoplePanel";
+import { NotesPanel } from "@/components/clients/NotesPanel";
+import { MeetingsPanel } from "@/components/meetings/MeetingsPanel";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -31,6 +34,8 @@ export default async function ClientPage({ params, searchParams }: Props) {
   if (!client) notFound();
   const openTasks = client.tasks.filter((t) => t.status !== "done" && t.status !== "cancelled").length;
   const upcoming = client.milestones.filter((m) => m.status === "upcoming").length;
+  const now = nowMs();
+  const meetingsPending = client.meetings.filter((m) => (m.status === "planned" && m.heldAt.getTime() >= now) || ((m.status === "planned" || m.status === "held") && !m.mom)).length;
   const tab = typeof sp.tab === "string" ? sp.tab : "timeline";
 
   return (
@@ -48,12 +53,16 @@ export default async function ClientPage({ params, searchParams }: Props) {
           <TabsTrigger value="dates">
             Dates <Count n={upcoming} />
           </TabsTrigger>
+          <TabsTrigger value="meetings">
+            Meetings <Count n={meetingsPending} />
+          </TabsTrigger>
           <TabsTrigger value="tasks">
             Tasks <Count n={openTasks} />
           </TabsTrigger>
           <TabsTrigger value="people">
             People <Count n={client.people.length} />
           </TabsTrigger>
+          <TabsTrigger value="notes">Notes</TabsTrigger>
           <TabsTrigger value="docs">Docs</TabsTrigger>
         </TabsList>
         <TabsContent value="timeline">
@@ -62,11 +71,17 @@ export default async function ClientPage({ params, searchParams }: Props) {
         <TabsContent value="dates">
           <MilestonesPanel clientId={client.id} milestones={client.milestones} />
         </TabsContent>
+        <TabsContent value="meetings">
+          <MeetingsPanel clientId={client.id} clientName={client.name} meetings={client.meetings} people={client.people} now={now} />
+        </TabsContent>
         <TabsContent value="tasks">
           <TasksPanel clientId={client.id} tasks={client.tasks} />
         </TabsContent>
         <TabsContent value="people">
           <PeoplePanel clientId={client.id} people={client.people} />
+        </TabsContent>
+        <TabsContent value="notes">
+          <NotesPanel clientId={client.id} notes={client.notes} momFormat={client.momFormat} />
         </TabsContent>
         <TabsContent value="docs">
           <EmptyState title="Documents arrive in Phase 4" hint="BRDs, MOMs, test cases and guides will live here with full text search." compact />

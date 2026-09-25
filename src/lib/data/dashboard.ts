@@ -2,12 +2,13 @@ import { desc, isNotNull } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { activities } from "@/lib/db/schema";
 import { listClientSummaries } from "./clients";
+import { listMeetingsAwaitingMinutes, listUpcomingMeetings } from "./meetings";
 import { listOverdueMilestones, listUpcomingMilestones } from "./milestones";
 import { listOverdueTasks, listTasksDueToday, listWaitingTasks } from "./tasks";
 
 export async function getDashboard() {
   const db = await getDb();
-  const [clients, dueToday, overdueTasks, overdueMilestones, upcoming, waiting, recent] = await Promise.all([
+  const [clients, dueToday, overdueTasks, overdueMilestones, upcoming, waiting, recent, meetings, awaitingMinutes] = await Promise.all([
     listClientSummaries(),
     listTasksDueToday(),
     listOverdueTasks(),
@@ -20,6 +21,8 @@ export async function getDashboard() {
       orderBy: [desc(activities.occurredAt)],
       limit: 12,
     }),
+    listUpcomingMeetings(7),
+    listMeetingsAwaitingMinutes(),
   ]);
   return {
     clients,
@@ -29,6 +32,8 @@ export async function getDashboard() {
     upcoming,
     waiting,
     recent: recent.filter((a) => a.client && !a.client.archivedAt),
+    meetings,
+    awaitingMinutes,
   };
 }
 

@@ -6,7 +6,8 @@ import { ComingUp } from "@/components/home/ComingUp";
 import { RecentActivity } from "@/components/home/RecentActivity";
 import { ClientsTable } from "@/components/clients/ClientsTable";
 import { QuickLogBar } from "@/components/quicklog/QuickLogBar";
-import { TaskRow } from "@/components/tasks/TaskRow";
+import { TodayPanel } from "@/components/home/TodayPanel";
+import { MeetingsPanel } from "@/components/home/MeetingsPanel";
 
 export default async function HomePage() {
   const data = await getDashboard();
@@ -32,16 +33,9 @@ export default async function HomePage() {
           />
         </Panel>
         <div className="space-y-10 lg:col-span-5">
+          <TodayPanel data={data} />
+          <MeetingsPanel data={data} />
           <ComingUp upcoming={data.upcoming} overdue={data.overdueMilestones} />
-          {data.waiting.length > 0 && (
-            <Panel title="Waiting on others" aside={String(data.waiting.length)}>
-              <ul>
-                {data.waiting.slice(0, 6).map((t) => (
-                  <TaskRow key={t.id} task={t} client={t.client} compact />
-                ))}
-              </ul>
-            </Panel>
-          )}
         </div>
       </div>
 

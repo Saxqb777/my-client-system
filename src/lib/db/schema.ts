@@ -68,6 +68,7 @@ export const documentTypeEnum = pgEnum("document_type", [
   "other",
 ]);
 export const reportStatusEnum = pgEnum("report_status", ["draft", "final"]);
+export const meetingStatusEnum = pgEnum("meeting_status", ["planned", "held", "minuted", "cancelled"]);
 export const insightKindEnum = pgEnum("insight_kind", ["next_step", "risk", "nudge"]);
 export const insightStatusEnum = pgEnum("insight_status", ["open", "accepted", "dismissed"]);
 
@@ -142,6 +143,7 @@ export const clients = pgTable(
     phaseTargetOriginal: date("phase_target_original", { mode: "string" }),
     color: text("color"),
     notes: text("notes"),
+    momFormat: text("mom_format"),
     sortOrder: integer("sort_order").notNull().default(0),
     demoStatus: boolean("demo_status").notNull().default(false),
     archivedAt: timestamp("archived_at", { withTimezone: true }),
@@ -180,6 +182,8 @@ export const meetings = pgTable(
       .references(() => clients.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     heldAt: timestamp("held_at", { withTimezone: true }).notNull(),
+    status: meetingStatusEnum("status").notNull().default("held"),
+    location: text("location"),
     attendees: jsonb("attendees")
       .$type<string[]>()
       .notNull()
@@ -266,6 +270,7 @@ export const tasks = pgTable(
     sourceMeetingId: uuid("source_meeting_id").references(() => meetings.id, {
       onDelete: "set null",
     }),
+    sortOrder: integer("sort_order").notNull().default(0),
     isDemo: boolean("is_demo").notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -413,4 +418,5 @@ export type MilestoneType = Milestone["type"];
 export type ActivityType = Activity["type"];
 export type ActivitySource = Activity["source"];
 export type TaskStatus = Task["status"];
+export type MeetingStatus = (typeof meetingStatusEnum.enumValues)[number];
 export type TaskPriority = Task["priority"];

@@ -37,7 +37,9 @@ When the sandbox cannot reach Neon directly, apply migration SQL through the Neo
 
 ## Layout
 
-- `src/app/(app)/*` pages behind auth: home (Orbit view), clients, clients/[id], activity, settings. Phase 2 adds tasks, dates, meetings, inbox. Phase 3 adds friday and `/api/v1`. Phase 4 adds documents and ask.
+- `src/app/(app)/*` pages behind auth: home (Orbit view, Today, Meetings, Coming up, clients ledger, recent activity), tasks, clients, clients/[id] (timeline, dates, meetings, tasks, people, notes), activity, settings. Phase 2 still adds dates and inbox. Phase 3 adds friday and `/api/v1`. Phase 4 adds documents and ask.
+- Meetings: `src/lib/data/meetings.ts` and `src/lib/ai/mom.ts`. A planned meeting whose time has passed asks for the transcript. `buildMinutes` drafts a `MinutesPlan` in the client's `mom_format` (or `DEFAULT_MOM_FORMAT`), `saveMinutes` writes the MOM, action items, tasks linked to the meeting, a decision activity, a mom document and the rewritten client notes. Nothing is saved before Saaqib reviews it.
+- Tasks: `/tasks` groups open tasks into Today (drag to order), Overdue, This week, Later, No date, Waiting on others, Done today. `parseTaskLine` in `src/lib/ai/taskline.ts` reads client, date, waiting on and priority from one typed line without a network call.
 - `src/lib/db/schema.ts` full schema for all phases. `src/lib/data/*` data access. `src/actions/*` server actions (validate with zod, call data layer, `revalidatePath`).
 - `src/lib/ai/*` Claude client and Quick Log parser. `src/lib/core/*` constants, Dubai date helpers, writing style, text matching.
 - `src/components/aurora/*` design system pieces (glass cards, health orbs, countdown rings, aurora background). `src/components/ui/*` restyled primitives.

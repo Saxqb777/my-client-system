@@ -136,3 +136,8 @@ export function greeting(reference: Date = new Date()): string {
   if (hour < 17) return "Good afternoon";
   return "Good evening";
 }
+
+/** Current time in milliseconds. A named helper so server components can read the clock once per render. */
+export function nowMs(): number {
+  return Date.now();
+}

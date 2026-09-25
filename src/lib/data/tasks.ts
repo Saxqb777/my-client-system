@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, lt, lte, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt, lte, type SQL } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { activities, tasks, type ActivitySource, type Client, type Task, type TaskStatus } from "@/lib/db/schema";
 import { todayISO } from "@/lib/core/dates";
@@ -115,4 +115,34 @@ export async function updateTask(id: string, patch: TaskPatch, source: ActivityS
 export async function deleteTask(id: string): Promise<void> {
   const db = await getDb();
   await db.delete(tasks).where(eq(tasks.id, id));
+}
+
+/** Open tasks for the tasks page, oldest manual order first within a day. */
+export async function listOpenTasks(): Promise<TaskWithClient[]> {
+  const db = await getDb();
+  const rows = await db.query.tasks.findMany({
+    where: inArray(tasks.status, OPEN),
+    with: { client: true },
+    orderBy: [asc(tasks.sortOrder), asc(tasks.dueDate), desc(tasks.priority), asc(tasks.createdAt)],
+    limit: 500,
+  });
+  return rows.filter((t) => !t.client?.archivedAt);
+}
+
+/** Tasks finished since the given time, newest first. */
+export async function listDoneSince(since: Date): Promise<TaskWithClient[]> {
+  const db = await getDb();
+  const rows = await db.query.tasks.findMany({
+    where: and(eq(tasks.status, "done"), gte(tasks.completedAt, since)),
+    with: { client: true },
+    orderBy: [desc(tasks.completedAt)],
+    limit: 100,
+  });
+  return rows;
+}
+
+/** Saves a manual order. Position in the list becomes sort_order. */
+export async function reorderTasks(ids: string[]): Promise<void> {
+  const db = await getDb();
+  await Promise.all(ids.map((id, i) => db.update(tasks).set({ sortOrder: i }).where(eq(tasks.id, id))));
 }

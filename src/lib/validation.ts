@@ -16,7 +16,7 @@ const isoDate = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Use a date like 2026-10-15");
 
 const optionalDate = z.preprocess((v) => (v === "" || v === undefined ? null : v), isoDate.nullable());
-const optionalText = z.preprocess((v) => (typeof v === "string" && v.trim() === "" ? null : v), z.string().trim().max(4000).nullable());
+const optionalText = z.preprocess((v) => (v === undefined || (typeof v === "string" && v.trim() === "") ? null : v), z.string().trim().max(4000).nullable());
 
 export const phaseValues = PHASES.map((p) => p.value) as [string, ...string[]];
 
@@ -46,6 +46,7 @@ export const clientInputSchema = z.object({
   phaseTargetDate: optionalDate,
   color: optionalText,
   notes: optionalText,
+  momFormat: optionalText,
 });
 export type ClientInput = z.infer<typeof clientInputSchema>;
 export const clientPatchSchema = clientInputSchema.partial();
@@ -105,3 +106,25 @@ export const taskInputSchema = z.object({
 export type TaskInput = z.infer<typeof taskInputSchema>;
 export const taskPatchSchema = taskInputSchema.partial();
 export type TaskPatch = z.infer<typeof taskPatchSchema>;
+
+const isoDateTime = z.preprocess((v) => (typeof v === "string" || v instanceof Date ? new Date(v) : v), z.date());
+
+export const meetingInputSchema = z.object({
+  clientId: z.string().uuid(),
+  title: z.string().trim().min(1, "Give the meeting a title").max(160),
+  heldAt: isoDateTime,
+  attendees: z.array(z.string().trim().min(1).max(80)).max(40).default([]),
+  location: optionalText,
+  rawNotes: optionalText,
+});
+export type MeetingInput = z.infer<typeof meetingInputSchema>;
+
+export const meetingPatchSchema = z.object({
+  title: z.string().trim().min(1).max(160).optional(),
+  heldAt: isoDateTime.optional(),
+  attendees: z.array(z.string().trim().min(1).max(80)).max(40).optional(),
+  location: optionalText.optional(),
+  rawNotes: optionalText.optional(),
+  status: z.enum(["planned", "held", "minuted", "cancelled"]).optional(),
+});
+export type MeetingPatch = z.infer<typeof meetingPatchSchema>;
