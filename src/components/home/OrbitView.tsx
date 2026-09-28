@@ -49,7 +49,9 @@ export function OrbitView({ clients }: { clients: OrbitClient[] }) {
     const out: { client: OrbitClient; ring: 1 | 2 | 3; angle: number; radius: number }[] = [];
     ([1, 2, 3] as const).forEach((ring) => {
       const list = groups[ring];
-      const offset = ring === 1 ? -40 : ring === 2 ? 20 : -140;
+      // Every ring starts its first slot on the same radial line (upper right), so a lone client on
+      // an outer ring sits in line with the others instead of drifting off on its own.
+      const offset = ring === 2 && list.length > 1 ? 20 : -40;
       list.forEach((client, i) => {
         const angle = offset + (360 / Math.max(list.length, 1)) * i;
         const radius = Math.round((7 + (client.activityCount14d / maxAct) * 9) * (compact ? 0.85 : 1));
@@ -64,7 +66,7 @@ export function OrbitView({ clients }: { clients: OrbitClient[] }) {
       <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="mx-auto block w-full max-w-[560px]" role="img" aria-label="Orbit view of all clients">
         {([3, 2, 1] as const).map((ring) => (
           <g key={ring}>
-            <circle cx={C} cy={C} r={r(ring)} fill="none" stroke="var(--border-strong)" strokeWidth={1} strokeDasharray={ring === 3 ? "1 5" : undefined} />
+            <circle cx={C} cy={C} r={r(ring)} fill="none" stroke="var(--border-strong)" strokeWidth={1} />
             {Array.from({ length: 4 }).map((_, i) => {
               const a = ((90 * i - 90) * Math.PI) / 180;
               return <line key={i} x1={rd(C + (r(ring) - 4) * Math.cos(a))} y1={rd(C + (r(ring) - 4) * Math.sin(a))} x2={rd(C + (r(ring) + 4) * Math.cos(a))} y2={rd(C + (r(ring) + 4) * Math.sin(a))} stroke="var(--border-strong)" strokeWidth={1} />;
