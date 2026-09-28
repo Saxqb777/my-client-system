@@ -44,7 +44,7 @@ When the sandbox cannot reach Neon directly, apply migration SQL through the Neo
 - `src/lib/db/schema.ts` full schema for all phases. `src/lib/data/*` data access. `src/actions/*` server actions (validate with zod, call data layer, `revalidatePath`).
 - `src/lib/ai/*` Claude client and Quick Log parser. `src/lib/core/*` constants, Dubai date helpers, writing style, text matching.
 - `src/components/aurora/*` design system pieces (glass cards, health orbs, countdown rings, aurora background). `src/components/ui/*` restyled primitives.
-- `src/lib/import/*` project export import: zod schema, pure mapper with the data sense rules (see `docs/orbit-log.md`), and `scripts/import-project-sql.ts` which emits statement batches for the Neon connector. Client export JSON lives in `data/imports/` and is git ignored.
+- `src/lib/import/*` project export import: zod schema, pure mapper with the data sense rules (see `docs/orbit-log.md`), and `scripts/import-project-sql.ts` which emits statement batches for the Neon connector. Session updates (a delta JSON after a meeting) go through `updateSchema.ts`, `mapUpdate.ts` and `scripts/import-update-sql.ts <update.json> <context.json> <out.json>`, where the context is a snapshot of the client's current rows. Client export JSON lives in `data/imports/` and is git ignored.
 - `src/lib/demo/seed.ts` demo data for local development. It never touches a client whose `demo_status` is false. Production holds real clients only.
 
 ## Conventions
