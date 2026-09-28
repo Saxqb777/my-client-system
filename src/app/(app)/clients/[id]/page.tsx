@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getClient } from "@/lib/data/clients";
-import { nowMs } from "@/lib/core/dates";
+import { nowMs, todayISO } from "@/lib/core/dates";
+import { journeyDomain } from "@/lib/core/journey";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ClientHeader } from "@/components/clients/ClientHeader";
 import { ClientTimeline } from "@/components/clients/ClientTimeline";
@@ -13,6 +14,7 @@ import { PeoplePanel } from "@/components/clients/PeoplePanel";
 import { NotesPanel } from "@/components/clients/NotesPanel";
 import { DocumentsPanel } from "@/components/clients/DocumentsPanel";
 import { MeetingsPanel } from "@/components/meetings/MeetingsPanel";
+import { JourneyTrack } from "@/components/dates/JourneyTrack";
 
 type Props = { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -37,6 +39,9 @@ export default async function ClientPage({ params, searchParams }: Props) {
   const now = nowMs();
   const meetingsPending = client.meetings.filter((m) => (m.status === "planned" && m.heldAt.getTime() >= now) || ((m.status === "planned" || m.status === "held") && !m.mom)).length;
   const tab = typeof sp.tab === "string" ? sp.tab : "timeline";
+  const today = todayISO();
+  const journeyDates = client.milestones.filter((m) => m.status !== "cancelled").map((m) => m.date);
+  const domain = journeyDomain(journeyDates, today, { padBefore: 14, padAfter: 21, minDays: 60 });
 
   return (
     <div className="animate-fade-up space-y-7">
@@ -44,6 +49,7 @@ export default async function ClientPage({ params, searchParams }: Props) {
         <ArrowLeft className="size-3.5" /> Clients
       </Link>
       <ClientHeader client={client} />
+      <JourneyTrack variant="solo" client={{ id: client.id, code: client.code, name: client.name, phase: client.phase, health: client.health }} milestones={client.milestones} domain={domain} today={today} />
 
       <Tabs defaultValue={tab}>
         <TabsList>

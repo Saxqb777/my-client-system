@@ -30,6 +30,16 @@ export async function listOverdueMilestones(): Promise<MilestoneWithClient[]> {
   return rows.filter((r) => !r.client.archivedAt);
 }
 
+/** Every open or finished date of every live client, for the tracker. Cancelled dates stay out. */
+export async function listTrackerMilestones(): Promise<Milestone[]> {
+  const db = await getDb();
+  const rows = await db.query.milestones.findMany({
+    where: inArray(milestones.status, ["upcoming", "missed", "done"]),
+    orderBy: [asc(milestones.date)],
+  });
+  return rows;
+}
+
 export async function createMilestone(input: MilestoneInput, source: ActivitySource = "app"): Promise<Milestone> {
   const db = await getDb();
   const [row] = await db
