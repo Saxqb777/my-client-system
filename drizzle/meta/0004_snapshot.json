@@ -1,5 +1,5 @@
 {
-  "id": "7844a071-329a-48c1-9f75-c743b82cb8b4",
+  "id": "af145953-c0d2-4de3-90c6-6c80b0f8fc67",
   "prevId": "8de16ae1-477e-401a-ade1-e857f4364e09",
   "version": "7",
   "dialect": "postgresql",
@@ -684,8 +684,8 @@
         }
       },
       "indexes": {
-        "meeting_outputs_meeting_idx": {
-          "name": "meeting_outputs_meeting_idx",
+        "meeting_outputs_meeting_kind_idx": {
+          "name": "meeting_outputs_meeting_kind_idx",
           "columns": [
             {
               "expression": "meeting_id",
@@ -700,7 +700,7 @@
               "nulls": "last"
             }
           ],
-          "isUnique": false,
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -1618,9 +1618,9 @@
           "name": "vocabulary_term_idx",
           "columns": [
             {
-              "expression": "term",
-              "isExpression": false,
+              "expression": "lower(\"term\")",
               "asc": true,
+              "isExpression": true,
               "nulls": "last"
             }
           ],

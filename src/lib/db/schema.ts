@@ -270,7 +270,7 @@ export const meetingOutputs = pgTable(
     promptVersion: text("prompt_version"),
     createdAt: createdAt(),
   },
-  (t) => [index("meeting_outputs_meeting_idx").on(t.meetingId, t.kind)],
+  (t) => [uniqueIndex("meeting_outputs_meeting_kind_idx").on(t.meetingId, t.kind)],
 );
 
 /** Terms the transcriber and the minutes writer must get right: clients, people, products, acronyms. */
@@ -284,7 +284,7 @@ export const vocabulary = pgTable(
     clientId: uuid("client_id").references(() => clients.id, { onDelete: "set null" }),
     createdAt: createdAt(),
   },
-  (t) => [uniqueIndex("vocabulary_term_idx").on(t.term)],
+  (t) => [uniqueIndex("vocabulary_term_idx").on(sql`lower(${t.term})`)],
 );
 
 export const milestones = pgTable(

@@ -48,9 +48,9 @@ ALTER TABLE "meetings" ADD COLUMN "ingest_hash" text;--> statement-breakpoint
 ALTER TABLE "meeting_outputs" ADD CONSTRAINT "meeting_outputs_meeting_id_meetings_id_fk" FOREIGN KEY ("meeting_id") REFERENCES "public"."meetings"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "meeting_transcripts" ADD CONSTRAINT "meeting_transcripts_meeting_id_meetings_id_fk" FOREIGN KEY ("meeting_id") REFERENCES "public"."meetings"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "vocabulary" ADD CONSTRAINT "vocabulary_client_id_clients_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "meeting_outputs_meeting_idx" ON "meeting_outputs" USING btree ("meeting_id","kind");--> statement-breakpoint
+CREATE UNIQUE INDEX "meeting_outputs_meeting_kind_idx" ON "meeting_outputs" USING btree ("meeting_id","kind");--> statement-breakpoint
 CREATE UNIQUE INDEX "meeting_transcripts_meeting_idx" ON "meeting_transcripts" USING btree ("meeting_id");--> statement-breakpoint
 CREATE INDEX "meeting_transcripts_search_idx" ON "meeting_transcripts" USING gin ("search_vector");--> statement-breakpoint
-CREATE UNIQUE INDEX "vocabulary_term_idx" ON "vocabulary" USING btree ("term");--> statement-breakpoint
+CREATE UNIQUE INDEX "vocabulary_term_idx" ON "vocabulary" USING btree (lower("term"));--> statement-breakpoint
 CREATE UNIQUE INDEX "meetings_ingest_hash_idx" ON "meetings" USING btree ("ingest_hash");--> statement-breakpoint
 CREATE INDEX "meetings_processing_idx" ON "meetings" USING btree ("processing");
