@@ -58,8 +58,8 @@ export async function buildMinutesAction(meetingId: string, transcript: unknown)
   try {
     const meeting = await getMeeting(meetingId);
     if (!meeting) return fail("Meeting not found");
-    const client = await getClient(meeting.clientId);
-    if (!client) return fail("Client not found");
+    const client = meeting.clientId ? await getClient(meeting.clientId) : null;
+    if (meeting.clientId && !client) return fail("Client not found");
     await updateMeeting(meetingId, { rawNotes: parsed.data, status: meeting.status === "planned" ? "held" : meeting.status });
     const result = await buildMinutes({ meeting, client, transcript: parsed.data });
     return ok({ ...result, aiConfigured: aiEnabled() });

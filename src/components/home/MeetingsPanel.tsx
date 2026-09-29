@@ -14,10 +14,10 @@ export function MeetingsPanel({ data }: { data: Dashboard }) {
           <li key={m.id} className="flex items-baseline gap-4 border-b border-border py-3 last:border-0">
             <span className="num w-[132px] shrink-0 text-[12px] text-muted">{formatDateTime(m.heldAt)}</span>
             <div className="min-w-0 flex-1">
-              <Link href={`/clients/${m.clientId}?tab=meetings`} className="text-[14px] text-text hover:underline">
+              <Link href={m.clientId ? `/clients/${m.clientId}?tab=meetings` : `/meetings/${m.id}`} className="text-[14px] text-text hover:underline">
                 {m.title}
               </Link>
-              <p className="text-[12px] text-warn">{m.client.name}. Waiting for the transcript to draft the minutes.</p>
+              <p className="text-[12px] text-warn">{m.client?.name ?? "Other Work"}. Waiting for the transcript to draft the minutes.</p>
             </div>
           </li>
         ))}
@@ -25,11 +25,11 @@ export function MeetingsPanel({ data }: { data: Dashboard }) {
           <li key={m.id} className="flex items-baseline gap-4 border-b border-border py-3 last:border-0">
             <span className="num w-[132px] shrink-0 text-[12px] text-muted">{formatDateTime(m.heldAt)}</span>
             <div className="min-w-0 flex-1">
-              <Link href={`/clients/${m.clientId}?tab=meetings`} className="text-[14px] text-text hover:underline">
+              <Link href={m.clientId ? `/clients/${m.clientId}?tab=meetings` : `/meetings/${m.id}`} className="text-[14px] text-text hover:underline">
                 {m.title}
               </Link>
               <p className="text-[12px] text-muted">
-                {m.client.name}
+                {m.client?.name ?? "Other Work"}
                 {m.location ? `, ${m.location}` : ""}
               </p>
             </div>

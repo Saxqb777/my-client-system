@@ -9,7 +9,7 @@ import type { MinutesPlan } from "@/lib/ai/mom";
 import { buildMinutesAction, saveMinutesAction } from "@/actions/meetings";
 import { HEALTH, MILESTONE_TYPES } from "@/lib/core/constants";
 import { formatDate, formatDateTime } from "@/lib/core/dates";
-import { renderMinutesText } from "@/lib/core/minutes";
+import { momHeading, renderMinutesText } from "@/lib/core/minutes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -80,7 +80,7 @@ export function MinutesBuilder({ meeting, clientCode, clientName, open, onOpenCh
   const ready = Boolean(plan && plan.objective.trim().length >= 10 && plan.points.some((p) => p.text.trim()));
   const previewText = plan
     ? renderMinutesText({
-        clientCode,
+        clientCode: clientCode || null,
         clientName,
         project: "",
         title: plan.title,
@@ -133,9 +133,7 @@ export function MinutesBuilder({ meeting, clientCode, clientName, open, onOpenCh
                 <Input value={plan.location ?? ""} placeholder="Microsoft Teams" onChange={(e) => update({ location: e.target.value || null })} />
               </Field>
             </div>
-            <p className="-mt-3 font-display text-[17px] text-text">
-              {clientCode} × Fero | {plan.title || meeting.title}
-            </p>
+            <p className="-mt-3 font-display text-[17px] text-text">{momHeading(clientCode || null, plan.title || meeting.title)}</p>
 
             <Field label="Meeting Objective">
               <Textarea value={plan.objective} onChange={(e) => update({ objective: e.target.value })} className="min-h-[64px] text-[13.5px] leading-relaxed" placeholder="One or two sentences on what the session was for." />

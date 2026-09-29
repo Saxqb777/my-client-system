@@ -59,13 +59,14 @@ export type MinutesPlan = z.infer<typeof minutesPlanSchema>;
 
 export type MinutesContext = {
   meeting: Meeting;
-  client: Client & { people: Person[]; milestones: Milestone[]; tasks: Task[] };
+  /** Null for Other Work: an internal Fero meeting or anything not client specific. */
+  client: (Client & { people: Person[]; milestones: Milestone[]; tasks: Task[] }) | null;
   transcript: string;
 };
 
 function systemPrompt(ctx: MinutesContext): string {
   const c = ctx.client;
-  const rules = c.momFormat?.trim();
+  const rules = c?.momFormat?.trim();
   return [
     "You write minutes of meeting for Saaqib, a product analyst at Fero in Abu Dhabi who runs enterprise client projects. The minutes go to the client as a Word document, so accuracy and tone matter more than length.",
     "Read the transcript and fill the fields below. Never invent facts, names or dates. If something is unclear, leave it out of the minutes and put it in openQuestions.",
@@ -89,12 +90,14 @@ function systemPrompt(ctx: MinutesContext): string {
 
 function userPrompt(ctx: MinutesContext): string {
   const c = ctx.client;
-  const people = c.people.map((p) => `${p.name}${p.role ? `, ${p.role}` : ""} (${p.side})`).join("\n") || "none recorded";
-  const dates = c.milestones.filter((m) => m.status === "upcoming").map((m) => `${m.type}: ${m.title}, ${formatDate(m.date)}`).join("\n") || "none";
-  const openTasks = c.tasks.filter((t) => t.status !== "done" && t.status !== "cancelled").slice(0, 30).map((t) => `${t.title}${t.waitingOn ? ` (waiting on ${t.waitingOn})` : ""}`).join("\n") || "none";
+  const people = c?.people.map((p) => `${p.name}${p.role ? `, ${p.role}` : ""} (${p.side})`).join("\n") || "none recorded";
+  const dates = c?.milestones.filter((m) => m.status === "upcoming").map((m) => `${m.type}: ${m.title}, ${formatDate(m.date)}`).join("\n") || "none";
+  const openTasks = c?.tasks.filter((t) => t.status !== "done" && t.status !== "cancelled").slice(0, 30).map((t) => `${t.title}${t.waitingOn ? ` (waiting on ${t.waitingOn})` : ""}`).join("\n") || "none";
   return [
     `Today is ${todayISO()} (Asia/Dubai).`,
-    `Client: ${c.name} (${c.code})${c.fullName ? `, ${c.fullName}` : ""}. System: ${c.system ?? "not set"}. Project label: ${projectLabel(c)}. Phase: ${phaseLabel(c.phase)}. Health: ${c.health}.`,
+    c
+      ? `Client: ${c.name} (${c.code})${c.fullName ? `, ${c.fullName}` : ""}. System: ${c.system ?? "not set"}. Project label: ${projectLabel(c)}. Phase: ${phaseLabel(c.phase)}. Health: ${c.health}.`
+      : "This is Other Work: an internal Fero meeting or one not tied to a client. Heading reads Fero | title. No client fields, dates or health to update; leave dateChanges empty and health null.",
     `Meeting: ${ctx.meeting.title}, ${formatDateTime(ctx.meeting.heldAt)}${ctx.meeting.location ? `, ${ctx.meeting.location}` : ""}.`,
     ctx.meeting.attendees.length ? `Invited: ${ctx.meeting.attendees.join(", ")}` : "",
     "",
@@ -108,7 +111,7 @@ function userPrompt(ctx: MinutesContext): string {
     openTasks,
     "",
     "Current client notes:",
-    c.notes?.trim() || "none yet",
+    c?.notes?.trim() || "none yet",
     "",
     "Transcript:",
     ctx.transcript.trim(),
@@ -148,7 +151,7 @@ export function rulesMinutes(ctx: MinutesContext): MinutesPlan {
     health: null,
     healthReason: null,
     nextStep: null,
-    notesUpdate: c.notes ?? "",
+    notesUpdate: c?.notes ?? "",
     openQuestions: [],
   };
 }

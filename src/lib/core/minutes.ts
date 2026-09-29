@@ -17,7 +17,8 @@ export const STANDARD_MOM_FORMAT = [
 
 /** Everything the text and the Word file need. */
 export type MinutesDoc = {
-  clientCode: string;
+  /** Null for Other Work: internal Fero meetings and anything not client specific. */
+  clientCode: string | null;
   clientName: string;
   /** Page header, for example "OMS Project". */
   project: string;
@@ -29,8 +30,8 @@ export type MinutesDoc = {
   actions: { text: string; owner: string | null }[];
 };
 
-export function momHeading(clientCode: string, title: string): string {
-  return `${clientCode} × Fero | ${title}`;
+export function momHeading(clientCode: string | null, title: string): string {
+  return clientCode ? `${clientCode} × Fero | ${title}` : `Fero | ${title}`;
 }
 
 export function momDateLine(heldAt: Date, location: string | null): string {
@@ -60,7 +61,7 @@ export function momFileName(doc: Pick<MinutesDoc, "clientCode" | "title">): stri
     if ((slug + w).length > 40) break;
     slug += w;
   }
-  return `${doc.clientCode}_Fero_${slug || "Meeting"}_MOM.docx`;
+  return `${doc.clientCode ? `${doc.clientCode}_Fero` : "Fero"}_${slug || "Meeting"}_MOM.docx`;
 }
 
 /** The plain text twin of the Word file: shown in Orbit, copied into emails, searched later. */
@@ -113,14 +114,14 @@ export function legacyMinutes(mom: string): MinutesBody {
   return { objective, points };
 }
 
-/** Builds the document from a saved meeting, using the structured minutes when present. */
-export function minutesDocFromMeeting(meeting: Meeting, client: Pick<Client, "code" | "name" | "system">): MinutesDoc {
+/** Builds the document from a saved meeting, using the structured minutes when present. A meeting without a client is Other Work. */
+export function minutesDocFromMeeting(meeting: Meeting, client: Pick<Client, "code" | "name" | "system"> | null): MinutesDoc {
   const body: MinutesBody = meeting.minutes ?? legacyMinutes(meeting.mom ?? "");
   const actions = (meeting.actionItems as ActionItem[]).map((a) => ({ text: a.text, owner: a.owner ?? null }));
   return {
-    clientCode: client.code,
-    clientName: client.name,
-    project: projectLabel(client),
+    clientCode: client?.code ?? null,
+    clientName: client?.name ?? "Other Work",
+    project: client ? projectLabel(client) : "Fero",
     title: meeting.title,
     heldAt: meeting.heldAt,
     location: meeting.location,

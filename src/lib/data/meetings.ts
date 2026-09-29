@@ -9,7 +9,8 @@ import { updateClient } from "./clients";
 import { findClientMilestones, updateMilestone } from "./milestones";
 import { createTask } from "./tasks";
 
-export type MeetingWithClient = Meeting & { client: Client };
+/** client is null for meetings not yet matched and for Other Work. */
+export type MeetingWithClient = Meeting & { client: Client | null };
 
 export async function listMeetings(opts: { clientId?: string; status?: Meeting["status"][]; limit?: number } = {}): Promise<MeetingWithClient[]> {
   const db = await getDb();
@@ -35,7 +36,7 @@ export async function listUpcomingMeetings(days = 14): Promise<MeetingWithClient
     with: { client: true },
     orderBy: [asc(meetings.heldAt)],
   });
-  return (rows as MeetingWithClient[]).filter((m) => !m.client.archivedAt);
+  return (rows as MeetingWithClient[]).filter((m) => !m.client?.archivedAt);
 }
 
 /** Meetings whose time has passed and that have no minutes yet. These ask for a transcript. */
@@ -47,7 +48,7 @@ export async function listMeetingsAwaitingMinutes(): Promise<MeetingWithClient[]
     orderBy: [desc(meetings.heldAt)],
     limit: 20,
   });
-  return (rows as MeetingWithClient[]).filter((m) => !m.client.archivedAt && !m.mom);
+  return (rows as MeetingWithClient[]).filter((m) => !m.client?.archivedAt && !m.mom);
 }
 
 export async function getMeeting(id: string): Promise<MeetingWithClient | null> {
@@ -63,14 +64,16 @@ export async function createMeeting(input: MeetingInput, source: ActivitySource 
     .insert(meetings)
     .values({ ...input, status: planned ? "planned" : "held" })
     .returning();
-  await db.insert(activities).values({
-    clientId: input.clientId,
-    type: "meeting",
-    title: planned ? `Meeting set: ${row.title}, ${formatDateTime(row.heldAt)}` : `Meeting held: ${row.title}`,
-    occurredAt: planned ? new Date() : row.heldAt,
-    source,
-    meetingId: row.id,
-  });
+  if (input.clientId) {
+    await db.insert(activities).values({
+      clientId: input.clientId,
+      type: "meeting",
+      title: planned ? `Meeting set: ${row.title}, ${formatDateTime(row.heldAt)}` : `Meeting held: ${row.title}`,
+      occurredAt: planned ? new Date() : row.heldAt,
+      source,
+      meetingId: row.id,
+    });
+  }
   return row;
 }
 
@@ -96,6 +99,7 @@ export async function saveMinutes(id: string, plan: MinutesPlan, accept: { tasks
   const db = await getDb();
   const meeting = await getMeeting(id);
   if (!meeting) throw new Error("Meeting not found");
+  // Null for Other Work: the minutes and tasks still save, client fields, dates and the timeline are skipped.
   const clientId = meeting.clientId;
   const lines: string[] = [];
 
@@ -112,7 +116,7 @@ export async function saveMinutes(id: string, plan: MinutesPlan, accept: { tasks
 
   // Dates
   for (const [i, d] of plan.dateChanges.entries()) {
-    if (!accept.dateChanges[i]) continue;
+    if (!accept.dateChanges[i] || !clientId) continue;
     const existing = await findClientMilestones(clientId, [d.type]);
     const byTitle = d.title ? existing.find((e) => e.title.toLowerCase() === d.title!.toLowerCase()) : undefined;
     const target = byTitle ?? existing[0];
@@ -132,7 +136,7 @@ export async function saveMinutes(id: string, plan: MinutesPlan, accept: { tasks
   if (accept.health && plan.health) patch.health = plan.health;
   if (accept.nextStep && plan.nextStep) patch.nextStep = plan.nextStep;
   if (accept.notes && plan.notesUpdate) patch.notes = plan.notesUpdate;
-  if (Object.keys(patch).length) {
+  if (Object.keys(patch).length && clientId) {
     await updateClient(clientId, patch, source);
     if (patch.health) lines.push(`Health set to ${String(patch.health).replace("_", " ")}`);
     if (patch.nextStep) lines.push("Next step updated");
@@ -144,9 +148,9 @@ export async function saveMinutes(id: string, plan: MinutesPlan, accept: { tasks
   const location = plan.location ?? meeting.location;
   const minutes: MinutesBody = { objective: plan.objective, points: plan.points };
   const text = renderMinutesText({
-    clientCode: meeting.client.code,
-    clientName: meeting.client.name,
-    project: projectLabel(meeting.client),
+    clientCode: meeting.client?.code ?? null,
+    clientName: meeting.client?.name ?? "Other Work",
+    project: meeting.client ? projectLabel(meeting.client) : "Fero",
     title,
     heldAt: meeting.heldAt,
     location,
@@ -167,17 +171,19 @@ export async function saveMinutes(id: string, plan: MinutesPlan, accept: { tasks
     .returning();
   await db.update(meetings).set({ documentId: doc.id }).where(eq(meetings.id, id));
 
-  // Timeline entries
-  await db.insert(activities).values({
-    clientId,
-    type: "meeting",
-    title: `Minutes ready: ${title}`,
-    body: plan.summary,
-    occurredAt: meeting.heldAt,
-    source,
-    meetingId: id,
-  });
-  if (plan.decisions.length) {
+  // Timeline entries need a client; Other Work meetings keep their minutes on the meeting page only.
+  if (clientId) {
+    await db.insert(activities).values({
+      clientId,
+      type: "meeting",
+      title: `Minutes ready: ${title}`,
+      body: plan.summary,
+      occurredAt: meeting.heldAt,
+      source,
+      meetingId: id,
+    });
+  }
+  if (plan.decisions.length && clientId) {
     await db.insert(activities).values({
       clientId,
       type: "decision",
