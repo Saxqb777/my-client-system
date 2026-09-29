@@ -1,4 +1,5 @@
 import { getDashboard } from "@/lib/data/dashboard";
+import { getDigest } from "@/lib/data/digest";
 import { Panel } from "@/components/aurora/Panel";
 import { Masthead } from "@/components/home/Masthead";
 import { OrbitView } from "@/components/home/OrbitView";
@@ -8,9 +9,10 @@ import { ClientsTable } from "@/components/clients/ClientsTable";
 import { QuickLogBar } from "@/components/quicklog/QuickLogBar";
 import { TodayPanel } from "@/components/home/TodayPanel";
 import { MeetingsPanel } from "@/components/home/MeetingsPanel";
+import { DigestPanel } from "@/components/home/DigestPanel";
 
 export default async function HomePage() {
-  const data = await getDashboard();
+  const [data, digest] = await Promise.all([getDashboard(), getDigest()]);
 
   return (
     <div className="animate-fade-up">
@@ -33,6 +35,7 @@ export default async function HomePage() {
           />
         </Panel>
         <div className="space-y-10 lg:col-span-5">
+          <DigestPanel digest={digest} />
           <TodayPanel data={data} />
           <MeetingsPanel data={data} />
           <ComingUp upcoming={data.upcoming} overdue={data.overdueMilestones} />
