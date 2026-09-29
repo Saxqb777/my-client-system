@@ -18,11 +18,11 @@ export const minutesPlanSchema = z.object({
   points: z
     .array(
       z.object({
-        topic: z.string().describe("Two or three word topic label, for example Payment Scope, Settlement Model, Prerequisites, Invoice Generation"),
-        text: z.string().describe("Two to four sentences of prose on what was explained, confirmed and agreed under this topic. Passive voice. Fero staff are never named."),
+        topic: z.string().describe("Topic head, always present: a noun phrase of two to four words, for example Units of Measure, Vehicle and Container Types, Vendor Allocation, Service Costing, Session Planning"),
+        text: z.string().describe("One to three sentences of prose on what exists, what was confirmed or agreed, what is to be added and what stays open under this topic. Passive voice. Fero staff are never named."),
       }),
     )
-    .describe("Discussion Points: six to twelve topics in the order they were discussed, covering everything material. Fewer only for a short meeting."),
+    .describe("Discussion Points: one per topic in the order discussed, as many as the meeting had. A short call may have three, a long workshop twenty or more. Never merge topics to hit a count and never pad."),
   details: z
     .object({
       attendeesFero: z.array(z.string()).describe("Fero side people present, full names"),
@@ -36,8 +36,8 @@ export const minutesPlanSchema = z.object({
   decisions: z.array(z.string()).describe("Decisions taken, one clean sentence each, for the client timeline. Empty if none."),
   actionItems: z.array(
     z.object({
-      text: z.string().describe("The action as a clean instruction, no owner inside the text"),
-      owner: z.string().nullable().describe("Full name of the person responsible, or the organisation such as Fero when no one person was named"),
+      text: z.string().describe("The action as a clean instruction starting with a verb, no owner inside the text. Every item the discussion marks as to be added, to be confirmed or to be shared becomes one row."),
+      owner: z.string().nullable().describe("Full name of the person responsible, Fero when the Fero team owns it, or two names joined with and when shared, for example Mohammad Al Sibaei and Diego Cueto"),
       due: z.string().nullable().describe("yyyy-MM-dd if a date was agreed, else null"),
     }),
   ),
@@ -84,7 +84,16 @@ function systemPrompt(ctx: MinutesContext): string {
     STANDARD_MOM_FORMAT,
     "",
     "How to write the discussion points: read the whole transcript first, group what was said into topics, one bullet per topic, in meeting order. Each bullet is a small paragraph of prose that a reader who was not there can follow: what was explained, what was confirmed, what was agreed, what was deferred. Write in the passive or with the system or team as the subject: 'the OMS will generate', 'it was confirmed', 'the Magnati model is preferred'. Do not write 'we' or 'I'. Do not name Fero staff. Client and third party people may be named where the point needs it.",
-    "Action points: one row per commitment, the action as a clean instruction, the owner as the person's full name, or Fero when the Fero team owns it and no one person was named.",
+    "Action points: one row per commitment, the action as a clean instruction starting with a verb. Everything the discussion marks as to be added, to be confirmed or to be shared becomes a row. Owner is the person's full name, Fero when the Fero team owns it, or two names joined with and when shared.",
+    "",
+    "Example of the form, from an approved MOM. Copy the shape, never the content:",
+    "Meeting Objective: Continuation of the configuration walkthrough, covering units of measure, vehicle and container types, equipment, users and roles, the service provider model, and the costing of charge codes.",
+    "Point, topic Units of Measure: Each unit carries a code, symbol, name and dimension, such as weight, volume, time, count, energy, area or length. Standard units are preloaded and further units can be added.",
+    "Point, topic Vendor Allocation: More than one vendor may serve the same service. The model discussed routes a request to the cheapest vendor by default, passing to the next on rejection, with the tenant able to select a preferred vendor at a premium. Vendor performance is to be tracked against KPIs and SLAs.",
+    "Point, topic Session Planning: Longer sessions of two to three hours were proposed. Next week operations are committed to an exhibition and Finance to quarter closing, with Finance available from 7 to 9 October. Finance topics are to lead next week.",
+    "Action: Add refrigerated and frozen to the vehicle and container types. Owner: Fero.",
+    "Action: Confirm whether security or HSE approves equipment documents. Owner: Mohammad Al Sibaei.",
+    "Action: Confirm the vendor allocation and tenant selection model. Owner: Mohammad Al Sibaei and Diego Cueto.",
     "details: a second sheet Saaqib keeps beside the MOM. Attendees split by side (Fero people versus client and third parties), the agenda as it ran, open points, the next meeting if mentioned. Decisions go in the decisions list.",
     rules ? `Rules for this client, on top of the standard layout: ${rules}` : "",
     "",
@@ -167,6 +176,18 @@ export function rulesMinutes(ctx: MinutesContext): MinutesPlan {
   };
 }
 
+/**
+ * Every discussion point starts with a topic head. When Claude leaves it out, the head is taken from the
+ * opening words of the point: up to the first comma, colon or full stop, at most five words.
+ */
+export function topicHead(text: string): string {
+  const weak = new Set(["is", "are", "was", "were", "be", "to", "of", "and", "or", "the", "a", "an", "for", "with", "by", "in", "on", "at", "as"]);
+  const opening = text.trim().split(/[,:.;]/)[0] ?? "";
+  const words = opening.replace(/^(the|a|an)\s+/i, "").split(/\s+/).filter(Boolean).slice(0, 5);
+  while (words.length > 1 && weak.has(words[words.length - 1].toLowerCase())) words.pop();
+  return words.join(" ");
+}
+
 export function normalizeMinutes(plan: MinutesPlan): MinutesPlan {
   const iso = /^\d{4}-\d{2}-\d{2}$/;
   const tidy = (s: string) => cleanStyle(s).trim();
@@ -175,7 +196,13 @@ export function normalizeMinutes(plan: MinutesPlan): MinutesPlan {
     title: tidy(plan.title),
     location: plan.location?.trim() || null,
     objective: tidy(plan.objective),
-    points: plan.points.map((p) => ({ topic: tidy(p.topic).replace(/:$/, ""), text: tidy(p.text) })).filter((p) => p.text),
+    points: plan.points
+      .map((p) => {
+        const text = tidy(p.text);
+        const topic = tidy(p.topic).replace(/:$/, "") || topicHead(text);
+        return { topic, text };
+      })
+      .filter((p) => p.text),
     details: {
       attendeesFero: plan.details.attendeesFero.map((a) => a.trim()).filter(Boolean),
       attendeesClient: plan.details.attendeesClient.map((a) => a.trim()).filter(Boolean),

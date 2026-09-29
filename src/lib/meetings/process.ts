@@ -12,7 +12,7 @@ import { listVocabulary } from "@/lib/data/vocabulary";
 import { AUTO_LINK_CONFIDENCE, matchClient } from "./match";
 import { transcriptForPrompt } from "./transcript";
 
-export const MOM_PROMPT_VERSION = "mom-v2";
+export const MOM_PROMPT_VERSION = "mom-v3";
 
 /**
  * The pipeline behind every ingested or uploaded meeting. Runs after the HTTP response (Next `after`)

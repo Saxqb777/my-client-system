@@ -10,8 +10,8 @@ export const STANDARD_MOM_FORMAT = [
   "Heading: <CLIENT CODE> × Fero | <meeting title>",
   "Date line: <24 September 2026>  |  <location, for example Microsoft Teams>",
   "Meeting Objective: one paragraph, one or two sentences, what the session was for.",
-  "Discussion Points: six to twelve bullets in the order discussed. Each starts with a two or three word topic label in bold and a colon, for example Payment Scope, Settlement Model, Prerequisites, Invoice Generation, then two to four sentences of prose on what was explained, confirmed and agreed. Passive voice. Fero staff are never named in the prose; client and third party people may be named where it matters.",
-  "Action Points: a table with three columns, #, Action, Owner. Owner is the person's full name, or the organisation such as Fero when no one person was named. No due column, a date agreed in the meeting goes inside the action text.",
+  "Discussion Points: one bullet per topic discussed, in meeting order. The count follows the meeting: a short call may have three, a long workshop twenty or more. Never merge topics to hit a number. Every bullet starts with a topic head in bold and a colon: a noun phrase of two to four words, for example Units of Measure, Vehicle and Container Types, Vendor Allocation, Service Costing, Session Planning. Then one to three sentences of prose on what exists, what was confirmed or agreed, what is to be added, what stays open. Passive voice. Fero staff are never named in the prose; client and third party people may be named where it matters.",
+  "Action Points: a table with three columns, #, Action, Owner. One row per commitment, the action starts with a verb. Everything the discussion marks as to be added, to be confirmed or to be shared appears here. Owner is the person's full name, Fero when the Fero team owns it, or two names joined with and when shared. No due column, a date agreed in the meeting goes inside the action text.",
   "Nothing else: no attendee list, no decisions section, no next steps, no sign off.",
 ].join("\n");
 
