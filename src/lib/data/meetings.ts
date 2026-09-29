@@ -172,7 +172,10 @@ export async function saveMinutes(id: string, plan: MinutesPlan, accept: { tasks
   await db.update(meetings).set({ documentId: doc.id }).where(eq(meetings.id, id));
 
   // Timeline entries need a client; Other Work meetings keep their minutes on the meeting page only.
-  if (clientId) {
+  // Automatic processing may already have written these, so each one is written once per meeting.
+  const already = clientId ? await db.query.activities.findMany({ where: eq(activities.meetingId, id), columns: { type: true } }) : [];
+  const has = (type: "meeting" | "decision") => already.some((a) => a.type === type);
+  if (clientId && !has("meeting")) {
     await db.insert(activities).values({
       clientId,
       type: "meeting",
@@ -183,7 +186,7 @@ export async function saveMinutes(id: string, plan: MinutesPlan, accept: { tasks
       meetingId: id,
     });
   }
-  if (plan.decisions.length && clientId) {
+  if (plan.decisions.length && clientId && !has("decision")) {
     await db.insert(activities).values({
       clientId,
       type: "decision",

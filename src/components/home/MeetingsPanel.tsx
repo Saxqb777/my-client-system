@@ -5,10 +5,25 @@ import { Panel } from "@/components/aurora/Panel";
 
 /** Meetings that need a transcript first, then the next ones on the calendar. */
 export function MeetingsPanel({ data }: { data: Dashboard }) {
-  const { meetings, awaitingMinutes } = data;
-  if (meetings.length === 0 && awaitingMinutes.length === 0) return null;
+  const { meetings, awaitingMinutes, meetingsToReview, meetingsInFlight } = data;
+  if (meetings.length === 0 && awaitingMinutes.length === 0 && meetingsToReview === 0 && meetingsInFlight === 0) return null;
   return (
     <Panel title="Meetings" aside={meetings.length ? `${meetings.length} in 7 days` : undefined}>
+      {(meetingsToReview > 0 || meetingsInFlight > 0) && (
+        <p className="border-b border-border py-2.5 text-[13px]">
+          {meetingsToReview > 0 && (
+            <Link href="/meetings" className="link text-warn">
+              {meetingsToReview} {meetingsToReview === 1 ? "meeting needs" : "meetings need"} your review
+            </Link>
+          )}
+          {meetingsToReview > 0 && meetingsInFlight > 0 ? <span className="text-muted">, </span> : null}
+          {meetingsInFlight > 0 && (
+            <span className="text-muted">
+              {meetingsInFlight} being processed
+            </span>
+          )}
+        </p>
+      )}
       <ul>
         {awaitingMinutes.map((m) => (
           <li key={m.id} className="flex items-baseline gap-4 border-b border-border py-3 last:border-0">

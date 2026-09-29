@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CalendarPlus, Copy, FileDown, MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
@@ -27,7 +28,9 @@ function MeetingRow({ m, tone, pending, onEdit, onMinutes, onCancel, onDelete }:
       <div className="flex items-start gap-4">
         <span className="num w-[132px] shrink-0 pt-0.5 text-[12px] text-muted">{formatDateTime(m.heldAt)}</span>
         <div className="min-w-0 flex-1">
-          <p className="text-[15px] text-text">{m.title}</p>
+          <Link href={`/meetings/${m.id}`} className="text-[15px] text-text hover:underline">
+            {m.title}
+          </Link>
           <p className="mt-0.5 text-[12px] text-muted">
             {m.attendees.length ? m.attendees.join(", ") : "No attendees listed"}
             {m.location ? `, ${m.location}` : ""}

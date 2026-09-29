@@ -144,3 +144,57 @@ export function momDocument(doc: MinutesDoc): Document {
 export async function buildMomDocx(doc: MinutesDoc): Promise<Buffer> {
   return Packer.toBuffer(momDocument(doc));
 }
+
+export type DetailsDoc = {
+  heading: string;
+  dateLine: string;
+  project: string;
+  title: string;
+  attendeesFero: string[];
+  attendeesClient: string[];
+  agenda: string[];
+  decisions: string[];
+  openPoints: string[];
+  nextMeeting: string | null;
+};
+
+function numbered(items: string[]): Paragraph[] {
+  return items.map((text, i) => new Paragraph({ spacing: { after: 65 }, indent: { left: 300, hanging: 300 }, children: [run(`${i + 1}. `, { bold: true, color: TOPIC }), run(text)] }));
+}
+
+/** The additional details sheet: attendees by side, agenda, decisions, open points, next meeting. Same paper as the MOM. */
+export function detailsDocument(doc: DetailsDoc): Document {
+  const children: (Paragraph | Table)[] = [
+    new Paragraph({ spacing: { after: 40 }, children: [run(doc.heading, { bold: true, color: NAVY, size: 26 })] }),
+    new Paragraph({ spacing: { after: 130 }, border: { bottom: { style: BorderStyle.SINGLE, color: GOLD, size: 12, space: 4 } }, children: [run(`${doc.dateLine}  |  Additional details`, { italics: true, color: GREY })] }),
+    sectionHeading("Attendees"),
+    new Paragraph({ spacing: { after: 40 }, children: [run("Fero: ", { bold: true, color: TOPIC }), run(doc.attendeesFero.join(", ") || "none listed")] }),
+    new Paragraph({ spacing: { after: 90 }, children: [run("Client: ", { bold: true, color: TOPIC }), run(doc.attendeesClient.join(", ") || "none listed")] }),
+  ];
+  if (doc.agenda.length) children.push(sectionHeading("Agenda"), ...numbered(doc.agenda));
+  if (doc.decisions.length) children.push(sectionHeading("Decisions"), ...numbered(doc.decisions));
+  if (doc.openPoints.length) children.push(sectionHeading("Open points"), ...doc.openPoints.map((p) => point("", p)));
+  children.push(sectionHeading("Next meeting"), body(doc.nextMeeting ?? "Not set"));
+
+  return new Document({
+    creator: "Orbit",
+    title: `${doc.heading}, additional details`,
+    styles: {
+      default: { document: { run: { font: FONT, size: 18, color: INK } } },
+      paragraphStyles: [{ id: "ListParagraph", name: "List Paragraph", basedOn: "Normal", quickFormat: true }],
+    },
+    numbering: { config: [{ reference: "points", levels: [{ level: 0, format: LevelFormat.BULLET, text: "•", alignment: AlignmentType.LEFT, style: { paragraph: { indent: { left: 300, hanging: 180 } } } }] }] },
+    sections: [
+      {
+        properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 700, right: 720, bottom: 600, left: 720, header: 708, footer: 708, gutter: 0 } } },
+        headers: { default: new Header({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, spacing: { after: 40 }, border: { bottom: { style: BorderStyle.SINGLE, color: GOLD, size: 6, space: 4 } }, children: [run(`${doc.project} | ${doc.title}`, { color: NAVY, size: 17 })] })] }) },
+        footers: { default: new Footer({ children: [new Paragraph({ spacing: { before: 40 }, border: { top: { style: BorderStyle.SINGLE, color: GOLD, size: 6, space: 4 } }, children: [run("Confidential | Internal Use Only", { italics: true, color: "808080", size: 13 })] })] }) },
+        children,
+      },
+    ],
+  });
+}
+
+export async function buildDetailsDocx(doc: DetailsDoc): Promise<Buffer> {
+  return Packer.toBuffer(detailsDocument(doc));
+}
