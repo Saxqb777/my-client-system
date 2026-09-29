@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { LibraryMeeting, SearchHit } from "@/lib/data/meetingLibrary";
 import type { NavClient } from "@/components/shell/nav";
 import { formatDate, formatDateTime } from "@/lib/core/dates";
@@ -16,6 +19,7 @@ function stateWord(m: LibraryMeeting): string {
 
 /** Search box, then either the hits or the full ledger. Server rendered, filters live in the URL. */
 export function MeetingsLedger({ meetings, clients, q, clientFilter, hits }: { meetings: LibraryMeeting[]; clients: NavClient[]; q: string; clientFilter: string; hits: SearchHit[] | null }) {
+  const router = useRouter();
   return (
     <div className="space-y-5">
       <form className="flex flex-col gap-2 sm:flex-row sm:items-center" action="/meetings" method="get">
@@ -79,7 +83,18 @@ export function MeetingsLedger({ meetings, clients, q, clientFilter, hits }: { m
               </tr>
             )}
             {meetings.map((m) => (
-              <tr key={m.id}>
+              <tr
+                key={m.id}
+                className="cursor-pointer outline-none focus-visible:bg-surface-2"
+                tabIndex={0}
+                onClick={(e) => {
+                  if ((e.target as HTMLElement).closest("a")) return;
+                  router.push(`/meetings/${m.id}`);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") router.push(`/meetings/${m.id}`);
+                }}
+              >
                 <td className="num text-[12px] text-muted">{formatDateTime(m.heldAt)}</td>
                 <td>
                   <Link href={`/meetings/${m.id}`} className="text-[15px] text-text hover:underline">
