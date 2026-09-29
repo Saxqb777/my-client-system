@@ -48,3 +48,6 @@ next-env.d.ts
 
 # real client exports, never commit
 /data/imports/
+
+# Claude Code local permissions, this machine only
+.claude/settings.local.json
