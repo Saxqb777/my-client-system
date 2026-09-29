@@ -23,6 +23,15 @@ export const minutesPlanSchema = z.object({
       }),
     )
     .describe("Discussion Points: six to twelve topics in the order they were discussed, covering everything material. Fewer only for a short meeting."),
+  details: z
+    .object({
+      attendeesFero: z.array(z.string()).describe("Fero side people present, full names"),
+      attendeesClient: z.array(z.string()).describe("Client and third party people present, full names, organisation in brackets when known"),
+      agenda: z.array(z.string()).describe("Topics discussed, in order, three to eight words each"),
+      openPoints: z.array(z.string()).describe("Pending items and questions left open, one sentence each"),
+      nextMeeting: z.string().nullable().describe("Date, time and subject of the next meeting if one was mentioned, else null"),
+    })
+    .describe("The additional details sheet that goes with the MOM: attendees by side, agenda, open points, next meeting"),
   summary: z.string().describe("Two plain sentences on what the meeting was about and what came out of it, for the client timeline"),
   decisions: z.array(z.string()).describe("Decisions taken, one clean sentence each, for the client timeline. Empty if none."),
   actionItems: z.array(
@@ -76,6 +85,7 @@ function systemPrompt(ctx: MinutesContext): string {
     "",
     "How to write the discussion points: read the whole transcript first, group what was said into topics, one bullet per topic, in meeting order. Each bullet is a small paragraph of prose that a reader who was not there can follow: what was explained, what was confirmed, what was agreed, what was deferred. Write in the passive or with the system or team as the subject: 'the OMS will generate', 'it was confirmed', 'the Magnati model is preferred'. Do not write 'we' or 'I'. Do not name Fero staff. Client and third party people may be named where the point needs it.",
     "Action points: one row per commitment, the action as a clean instruction, the owner as the person's full name, or Fero when the Fero team owns it and no one person was named.",
+    "details: a second sheet Saaqib keeps beside the MOM. Attendees split by side (Fero people versus client and third parties), the agenda as it ran, open points, the next meeting if mentioned. Decisions go in the decisions list.",
     rules ? `Rules for this client, on top of the standard layout: ${rules}` : "",
     "",
     `Writing style for everything you output: ${WRITING_STYLE_RULES}`,
@@ -143,6 +153,7 @@ export function rulesMinutes(ctx: MinutesContext): MinutesPlan {
     attendees: ctx.meeting.attendees,
     objective: "",
     points: [{ topic: "Transcript", text: excerpt }],
+    details: { attendeesFero: [], attendeesClient: ctx.meeting.attendees, agenda: [], openPoints: [], nextMeeting: null },
     summary: "Minutes drafted from the transcript without Claude. Review before sending.",
     decisions: [],
     actionItems: [],
@@ -165,6 +176,13 @@ export function normalizeMinutes(plan: MinutesPlan): MinutesPlan {
     location: plan.location?.trim() || null,
     objective: tidy(plan.objective),
     points: plan.points.map((p) => ({ topic: tidy(p.topic).replace(/:$/, ""), text: tidy(p.text) })).filter((p) => p.text),
+    details: {
+      attendeesFero: plan.details.attendeesFero.map((a) => a.trim()).filter(Boolean),
+      attendeesClient: plan.details.attendeesClient.map((a) => a.trim()).filter(Boolean),
+      agenda: plan.details.agenda.map(tidy).filter(Boolean),
+      openPoints: plan.details.openPoints.map(tidy).filter(Boolean),
+      nextMeeting: plan.details.nextMeeting ? tidy(plan.details.nextMeeting) : null,
+    },
     summary: tidy(plan.summary),
     decisions: plan.decisions.map(tidy).filter(Boolean),
     actionItems: plan.actionItems.map((a) => ({ text: tidy(a.text), owner: a.owner?.trim() || null, due: a.due && iso.test(a.due) ? a.due : null })).filter((a) => a.text),

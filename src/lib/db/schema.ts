@@ -116,10 +116,26 @@ export type DiscussionPoint = { topic: string; text: string };
 /** One timed line of a transcript. Speaker is "me" for Saaqib's mic, "other" for everyone else, or a name when known. */
 export type TranscriptSegment = { start: number; end: number; speaker: string; text: string };
 
+/** Follow ups Claude proposed from a transcript that Saaqib has not accepted yet. Phase 2 applies them. */
+export type PendingProposal = {
+  tasks: { title: string; dueDate: string | null; waitingOn: string | null; priority: "low" | "normal" | "high" | "urgent" }[];
+  dateChanges: { type: string; title: string | null; newDate: string | null; markDone: boolean }[];
+  health: "on_track" | "at_risk" | "blocked" | null;
+  healthReason: string | null;
+  nextStep: string | null;
+  notesUpdate: string;
+  decisions: string[];
+  summary: string;
+  openQuestions: string[];
+  reviewedAt?: string | null;
+};
+
 /** The structured minutes behind the MOM text and the Word file. Action points live in action_items. */
 export type MinutesBody = {
   objective: string;
   points: DiscussionPoint[];
+  /** Present on meetings processed automatically, until the proposal is reviewed. */
+  proposal?: PendingProposal | null;
 };
 
 export type ReportRow = {
