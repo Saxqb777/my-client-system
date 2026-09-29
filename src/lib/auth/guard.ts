@@ -27,3 +27,14 @@ export async function apiPrincipal(): Promise<ApiPrincipal | null> {
 export function unauthorized() {
   return Response.json({ error: "Unauthorized" }, { status: 401 });
 }
+
+/** Guard for the Mac helper routes: the ingest token, the API token, or a signed in session. */
+export async function helperPrincipal(): Promise<ApiPrincipal | null> {
+  if (await hasSession()) return { kind: "session" };
+  const token = bearerToken((await headers()).get("authorization"));
+  if (!token) return null;
+  for (const expected of [process.env.ORBIT_INGEST_TOKEN, process.env.ORBIT_API_TOKEN]) {
+    if (expected && (await safeEqual(token, expected))) return { kind: "token" };
+  }
+  return null;
+}

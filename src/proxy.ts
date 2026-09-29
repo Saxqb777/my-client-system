@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, bearerToken, safeEqual, verifySessionToken } from "@/lib/auth/session";
 
 const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/auth/logout", "/api/health"];
+/** Routes the Mac helper calls with ORBIT_INGEST_TOKEN. A session or ORBIT_API_TOKEN also works. */
+const HELPER_PATHS = [/^\/api\/meetings\/ingest$/, /^\/api\/meetings\/[^/]+\/(status|process)$/, /^\/api\/v1\/vocabulary$/];
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -21,6 +23,15 @@ export async function proxy(request: NextRequest) {
     const expected = process.env.CRON_SECRET;
     if (token && expected && (await safeEqual(token, expected))) return NextResponse.next();
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (isApi && HELPER_PATHS.some((re) => re.test(pathname))) {
+    const token = bearerToken(request.headers.get("authorization"));
+    if (token) {
+      for (const expected of [process.env.ORBIT_INGEST_TOKEN, process.env.ORBIT_API_TOKEN]) {
+        if (expected && (await safeEqual(token, expected))) return NextResponse.next();
+      }
+    }
   }
 
   const sessionOk = await verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
