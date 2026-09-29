@@ -11,6 +11,8 @@ import {
   text,
   timestamp,
   uuid,
+  real,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // Enums
@@ -71,6 +73,10 @@ export const reportStatusEnum = pgEnum("report_status", ["draft", "final"]);
 export const meetingStatusEnum = pgEnum("meeting_status", ["planned", "held", "minuted", "cancelled"]);
 export const insightKindEnum = pgEnum("insight_kind", ["next_step", "risk", "nudge"]);
 export const insightStatusEnum = pgEnum("insight_status", ["open", "accepted", "dismissed"]);
+export const meetingSourceEnum = pgEnum("meeting_source", ["app", "upload", "mac_helper", "import"]);
+export const meetingProcessingEnum = pgEnum("meeting_processing", ["received", "processing", "processed", "needs_review", "failed"]);
+export const meetingOutputKindEnum = pgEnum("meeting_output_kind", ["details", "notes"]);
+export const vocabularyTypeEnum = pgEnum("vocabulary_type", ["client", "person", "product", "acronym"]);
 
 const tsvector = customType<{ data: string }>({
   dataType() {
@@ -106,6 +112,9 @@ export type ActionItem = {
 
 /** One discussion point in the standard MOM: a short bold topic and the prose under it. */
 export type DiscussionPoint = { topic: string; text: string };
+
+/** One timed line of a transcript. Speaker is "me" for Saaqib's mic, "other" for everyone else, or a name when known. */
+export type TranscriptSegment = { start: number; end: number; speaker: string; text: string };
 
 /** The structured minutes behind the MOM text and the Word file. Action points live in action_items. */
 export type MinutesBody = {
@@ -186,13 +195,26 @@ export const meetings = pgTable(
   "meetings",
   {
     id: id(),
-    clientId: uuid("client_id")
-      .notNull()
-      .references(() => clients.id, { onDelete: "cascade" }),
+    /** Null until Orbit or Saaqib links the meeting to a client, or when it lives in Other Work. */
+    clientId: uuid("client_id").references(() => clients.id, { onDelete: "cascade" }),
     title: text("title").notNull(),
     heldAt: timestamp("held_at", { withTimezone: true }).notNull(),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    durationMin: integer("duration_min"),
     status: meetingStatusEnum("status").notNull().default("held"),
     location: text("location"),
+    source: meetingSourceEnum("source").notNull().default("app"),
+    calendarTitle: text("calendar_title"),
+    /** Internal Fero meetings and anything not client specific. */
+    otherWork: boolean("other_work").notNull().default(false),
+    matchConfidence: real("match_confidence"),
+    matchReason: text("match_reason"),
+    /** Set for meetings that came through ingest or upload without a chosen client. Null for meetings made in the app. */
+    processing: meetingProcessingEnum("processing"),
+    errorMessage: text("error_message"),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+    /** sha256 of the start minute plus the first words, so the same meeting sent twice stays one row. */
+    ingestHash: text("ingest_hash"),
     attendees: jsonb("attendees")
       .$type<string[]>()
       .notNull()
@@ -209,7 +231,60 @@ export const meetings = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("meetings_client_idx").on(t.clientId, t.heldAt)],
+  (t) => [index("meetings_client_idx").on(t.clientId, t.heldAt), uniqueIndex("meetings_ingest_hash_idx").on(t.ingestHash), index("meetings_processing_idx").on(t.processing)],
+);
+
+/** One transcript per meeting: the flat text for search and the timed segments for the viewer and the notes. */
+export const meetingTranscripts = pgTable(
+  "meeting_transcripts",
+  {
+    id: id(),
+    meetingId: uuid("meeting_id")
+      .notNull()
+      .references(() => meetings.id, { onDelete: "cascade" }),
+    fullText: text("full_text").notNull().default(""),
+    segments: jsonb("segments")
+      .$type<TranscriptSegment[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    language: text("language").notNull().default("en"),
+    wordCount: integer("word_count").notNull().default(0),
+    searchVector: tsvector("search_vector").generatedAlwaysAs(sql`to_tsvector('english', coalesce(full_text, ''))`),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("meeting_transcripts_meeting_idx").on(t.meetingId), index("meeting_transcripts_search_idx").using("gin", t.searchVector)],
+);
+
+/** Generated outputs beside the MOM: the additional details sheet and the understanding notes. Kept per run. */
+export const meetingOutputs = pgTable(
+  "meeting_outputs",
+  {
+    id: id(),
+    meetingId: uuid("meeting_id")
+      .notNull()
+      .references(() => meetings.id, { onDelete: "cascade" }),
+    kind: meetingOutputKindEnum("kind").notNull(),
+    data: jsonb("data").$type<Record<string, unknown>>().notNull().default(sql`'{}'::jsonb`),
+    text: text("text").notNull().default(""),
+    model: text("model"),
+    promptVersion: text("prompt_version"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("meeting_outputs_meeting_idx").on(t.meetingId, t.kind)],
+);
+
+/** Terms the transcriber and the minutes writer must get right: clients, people, products, acronyms. */
+export const vocabulary = pgTable(
+  "vocabulary",
+  {
+    id: id(),
+    term: text("term").notNull(),
+    type: vocabularyTypeEnum("type").notNull().default("acronym"),
+    meaning: text("meaning"),
+    clientId: uuid("client_id").references(() => clients.id, { onDelete: "set null" }),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("vocabulary_term_idx").on(t.term)],
 );
 
 export const milestones = pgTable(
@@ -400,6 +475,20 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
 export const meetingsRelations = relations(meetings, ({ one, many }) => ({
   client: one(clients, { fields: [meetings.clientId], references: [clients.id] }),
   activities: many(activities),
+  transcript: one(meetingTranscripts, { fields: [meetings.id], references: [meetingTranscripts.meetingId] }),
+  outputs: many(meetingOutputs),
+}));
+
+export const meetingTranscriptsRelations = relations(meetingTranscripts, ({ one }) => ({
+  meeting: one(meetings, { fields: [meetingTranscripts.meetingId], references: [meetings.id] }),
+}));
+
+export const meetingOutputsRelations = relations(meetingOutputs, ({ one }) => ({
+  meeting: one(meetings, { fields: [meetingOutputs.meetingId], references: [meetings.id] }),
+}));
+
+export const vocabularyRelations = relations(vocabulary, ({ one }) => ({
+  client: one(clients, { fields: [vocabulary.clientId], references: [clients.id] }),
 }));
 
 export const documentsRelations = relations(documents, ({ one }) => ({
@@ -419,6 +508,11 @@ export type Milestone = typeof milestones.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
 export type Meeting = typeof meetings.$inferSelect;
+export type MeetingTranscript = typeof meetingTranscripts.$inferSelect;
+export type MeetingOutput = typeof meetingOutputs.$inferSelect;
+export type VocabularyTerm = typeof vocabulary.$inferSelect;
+export type MeetingSource = (typeof meetingSourceEnum.enumValues)[number];
+export type MeetingProcessing = (typeof meetingProcessingEnum.enumValues)[number];
 export type Document = typeof documents.$inferSelect;
 export type WeeklyReport = typeof weeklyReports.$inferSelect;
 export type Insight = typeof insights.$inferSelect;
