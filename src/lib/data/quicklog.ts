@@ -83,7 +83,7 @@ export async function applyQuickLog(plan: QuickLogPlan, clientId: string, source
         waitingOn: t.waitingOn,
       },
       source,
-      { sourceActivityId: activityId },
+      { sourceActivityId: activityId, origin: source === "paste" ? "email" : "manual" },
     );
     lines.push(t.waitingOn ? `Waiting on ${t.waitingOn}: ${t.title}` : `Task: ${t.title}`);
   }

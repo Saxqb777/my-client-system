@@ -1,4 +1,4 @@
-import { Activity, AudioLines, Building2, CalendarDays, ListChecks, Orbit, Settings } from "lucide-react";
+import { Activity, AudioLines, Building2, CalendarDays, History, ListChecks, Orbit, Settings } from "lucide-react";
 
 export const NAV = [
   { href: "/", label: "Orbit", icon: Orbit, exact: true },
@@ -7,6 +7,7 @@ export const NAV = [
   { href: "/meetings", label: "Meetings", icon: AudioLines, exact: false },
   { href: "/clients", label: "Clients", icon: Building2, exact: false },
   { href: "/activity", label: "Activity", icon: Activity, exact: false },
+  { href: "/changes", label: "Changes", icon: History, exact: false },
   { href: "/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
 

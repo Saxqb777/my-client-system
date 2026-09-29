@@ -11,9 +11,10 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ActivityFeed } from "@/components/activity/ActivityFeed";
+import type { ActivityChange } from "@/components/activity/ActivityItem";
 import { useQuickLog } from "@/components/quicklog/QuickLogProvider";
 
-export function ClientTimeline({ clientId, clientCode, activities }: { clientId: string; clientCode: string; activities: Activity[] }) {
+export function ClientTimeline({ clientId, clientCode, activities, changes }: { clientId: string; clientCode: string; activities: Activity[]; changes?: Record<string, ActivityChange> }) {
   const router = useRouter();
   const quickLog = useQuickLog();
   const [text, setText] = useState("");
@@ -68,7 +69,7 @@ export function ClientTimeline({ clientId, clientCode, activities }: { clientId:
           </div>
         </div>
       </div>
-      <ActivityFeed activities={activities} showClient={false} emptyHint="Health, phase and date changes are added here automatically." />
+      <ActivityFeed activities={activities} showClient={false} changes={changes} emptyHint="Health, phase and date changes are added here automatically." />
     </div>
   );
 }

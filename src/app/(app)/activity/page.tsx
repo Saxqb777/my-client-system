@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { activitySourceEnum, activityTypeEnum, type ActivitySource, type ActivityType } from "@/lib/db/schema";
 import { listActivities } from "@/lib/data/activities";
+import { changesByActivity } from "@/lib/data/changeLog";
 import { listClients } from "@/lib/data/clients";
 import { PageHeader } from "@/components/aurora/PageHeader";
 import { ActivityFeed } from "@/components/activity/ActivityFeed";
@@ -29,6 +30,8 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
       limit,
     }),
   ]);
+  const changeRows = await changesByActivity(activities.map((a) => a.id));
+  const changes = Object.fromEntries(Array.from(changeRows.entries()).map(([aid, c]) => [aid, { id: c.id, undone: Boolean(c.undoneAt), meetingId: c.meetingId }]));
   const more = new URLSearchParams();
   for (const [k, v] of Object.entries(p)) if (typeof v === "string" && k !== "limit") more.set(k, v);
   more.set("limit", String(limit + 60));
@@ -39,7 +42,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
       <Suspense>
         <ActivityFilters clients={clients.map((c) => ({ id: c.id, name: c.name, code: c.code, health: c.health }))} />
       </Suspense>
-      <ActivityFeed activities={activities} />
+      <ActivityFeed activities={activities} changes={changes} />
       {activities.length >= limit && (
         <div className="mt-6">
           <Button asChild variant="secondary" size="sm">

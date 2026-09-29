@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getClient } from "@/lib/data/clients";
+import { changesByActivity } from "@/lib/data/changeLog";
 import { nowMs, todayISO } from "@/lib/core/dates";
 import { journeyDomain } from "@/lib/core/journey";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -39,6 +40,8 @@ export default async function ClientPage({ params, searchParams }: Props) {
   const now = nowMs();
   const meetingsPending = client.meetings.filter((m) => (m.status === "planned" && m.heldAt.getTime() >= now) || ((m.status === "planned" || m.status === "held") && !m.mom)).length;
   const tab = typeof sp.tab === "string" ? sp.tab : "timeline";
+  const changeRows = await changesByActivity(client.activities.map((a) => a.id));
+  const changes = Object.fromEntries(Array.from(changeRows.entries()).map(([aid, c]) => [aid, { id: c.id, undone: Boolean(c.undoneAt), meetingId: c.meetingId }]));
   const today = todayISO();
   const journeyDates = client.milestones.filter((m) => m.status !== "cancelled").map((m) => m.date);
   const domain = journeyDomain(journeyDates, today, { padBefore: 14, padAfter: 21, minDays: 60 });
@@ -74,7 +77,7 @@ export default async function ClientPage({ params, searchParams }: Props) {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="timeline">
-          <ClientTimeline clientId={client.id} clientCode={client.code} activities={client.activities} />
+          <ClientTimeline clientId={client.id} clientCode={client.code} activities={client.activities} changes={changes} />
         </TabsContent>
         <TabsContent value="dates">
           <MilestonesPanel clientId={client.id} milestones={client.milestones} />

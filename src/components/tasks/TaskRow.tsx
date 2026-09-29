@@ -107,6 +107,12 @@ export function TaskRow({
           {task.status === "in_progress" && !done && <span className="text-info">In progress</span>}
           {task.priority === "urgent" && !done && <span className="text-bad">Urgent</span>}
           {task.priority === "high" && !done && <span className="text-warn">High</span>}
+          {task.origin === "meeting" && task.sourceMeetingId && (
+            <Link href={`/meetings/${task.sourceMeetingId}`} className="hover:underline" title={task.evidenceQuote ? `"${task.evidenceQuote}"` : "Picked up from a meeting"}>
+              From meeting
+            </Link>
+          )}
+          {task.origin === "email" && <span>From email</span>}
         </div>
       </div>
 

@@ -7,6 +7,7 @@ import { Copy, FileDown, Loader2, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import type { NavClient } from "@/components/shell/nav";
 import type { MeetingFull } from "@/lib/data/meetingLibrary";
+import type { ChangeWithLinks } from "@/lib/data/changeLog";
 import type { UnderstandingNotes } from "@/lib/core/notes";
 import type { MeetingDetails } from "@/lib/core/notes";
 import { retryMeetingAction } from "@/actions/meetingIntel";
@@ -30,11 +31,11 @@ const STATE: Record<string, { word: string; tone: string }> = {
 };
 
 /** One meeting: header with client and state, then Minutes, Additional details, Notes, Transcript, Review. */
-export function MeetingView({ meeting, clients }: { meeting: MeetingFull; clients: NavClient[] }) {
+export function MeetingView({ meeting, clients, changes = [], initialTab, initialSeek = null }: { meeting: MeetingFull; clients: NavClient[]; changes?: ChangeWithLinks[]; initialTab?: string; initialSeek?: number | null }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [tab, setTab] = useState("minutes");
-  const [seek, setSeek] = useState<number | null>(null);
+  const [tab, setTab] = useState(initialTab ?? "minutes");
+  const [seek, setSeek] = useState<number | null>(initialSeek);
 
   const details = meeting.outputs.find((o) => o.kind === "details");
   const notesOut = meeting.outputs.find((o) => o.kind === "notes");
@@ -189,7 +190,7 @@ export function MeetingView({ meeting, clients }: { meeting: MeetingFull; client
           </TabsContent>
 
           <TabsContent value="review">
-            {proposal ? <ProposalReview meetingId={meeting.id} proposal={proposal} hasClient={Boolean(meeting.clientId)} /> : <p className="py-3 text-[14px] text-muted">Nothing proposed. Meetings minuted from the client page are reviewed there before saving.</p>}
+            {proposal ? <ProposalReview meetingId={meeting.id} proposal={proposal} hasClient={Boolean(meeting.client)} changes={changes} transcript={meeting.transcript?.fullText ?? ""} onSeek={jump} /> : <p className="py-3 text-[14px] text-muted">Nothing proposed. Meetings minuted from the client page are reviewed there before saving.</p>}
           </TabsContent>
         </Tabs>
       )}

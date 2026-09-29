@@ -108,7 +108,7 @@ export async function saveMinutes(id: string, plan: MinutesPlan, accept: { tasks
   // Follow up tasks for Saaqib
   for (const [i, t] of plan.tasks.entries()) {
     if (!accept.tasks[i]) continue;
-    const row = await createTask({ clientId, title: t.title, details: null, status: t.waitingOn ? "waiting" : "todo", priority: t.priority, dueDate: t.dueDate, waitingOn: t.waitingOn }, source, { sourceMeetingId: id });
+    const row = await createTask({ clientId, title: t.title, details: null, status: t.waitingOn ? "waiting" : "todo", priority: t.priority, dueDate: t.dueDate, waitingOn: t.waitingOn }, source, { sourceMeetingId: id, origin: "meeting", evidence: t.evidence ? { quote: t.evidence.quote, at: null } : null });
     const match = actionItems.find((a) => a.text.toLowerCase() === t.title.toLowerCase());
     if (match) match.taskId = row.id;
     lines.push(`Task: ${row.title}`);
