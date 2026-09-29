@@ -11,7 +11,6 @@ import type { UnderstandingNotes } from "@/lib/core/notes";
 import type { MeetingDetails } from "@/lib/core/notes";
 import { retryMeetingAction } from "@/actions/meetingIntel";
 import { formatDateTime } from "@/lib/core/dates";
-import { momHeading } from "@/lib/core/minutes";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AssignClient } from "../library/AssignClient";
@@ -19,6 +18,7 @@ import { ProcessingWatch } from "../library/ProcessingWatch";
 import { NotesView } from "./NotesView";
 import { ProposalReview } from "./ProposalReview";
 import { TranscriptViewer } from "./TranscriptViewer";
+import { MinutesSheet } from "./MinutesSheet";
 import { cn } from "@/lib/utils";
 
 const STATE: Record<string, { word: string; tone: string }> = {
@@ -139,10 +139,7 @@ export function MeetingView({ meeting, clients }: { meeting: MeetingFull; client
 
           <TabsContent value="minutes">
             {meeting.mom ? (
-              <div>
-                <p className="font-display text-[18px] text-text">{momHeading(clientCode, meeting.title)}</p>
-                <pre className="mt-3 whitespace-pre-wrap font-sans text-[14px] leading-relaxed text-text">{meeting.mom}</pre>
-              </div>
+              <MinutesSheet meeting={meeting} clientCode={clientCode} />
             ) : (
               <p className="py-3 text-[14px] text-muted">No minutes yet.</p>
             )}

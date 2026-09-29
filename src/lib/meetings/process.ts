@@ -4,7 +4,7 @@ import { activities, clients, documents, meetingOutputs, meetings, type ActionIt
 import { buildMinutes } from "@/lib/ai/mom";
 import { buildNotes, NOTES_PROMPT_VERSION } from "@/lib/ai/notes";
 import { condenseTranscript, LONG_MEETING_MINUTES } from "@/lib/ai/condense";
-import { AI_MODEL } from "@/lib/ai/client";
+import { AI_MODEL, aiEnabled } from "@/lib/ai/client";
 import { momDateLine, momHeading, projectLabel, renderMinutesText } from "@/lib/core/minutes";
 import { renderDetailsText, renderNotesText, type MeetingDetails } from "@/lib/core/notes";
 import { getClient } from "@/lib/data/clients";
@@ -44,13 +44,17 @@ export async function processMeeting(id: string): Promise<void> {
       matchConfidence = r.confidence;
       matchReason = r.reason;
       if (r.clientId && r.confidence >= AUTO_LINK_CONFIDENCE) clientId = r.clientId;
+      // Keep the match even if Claude fails below, so a failed meeting still shows its client and reason.
+      await db.update(meetings).set({ clientId, matchConfidence, matchReason }).where(eq(meetings.id, id));
     }
 
     const client = clientId ? ((await getClient(clientId)) ?? null) : null;
     const minutesLong = (meeting.durationMin ?? 0) > LONG_MEETING_MINUTES || meeting.transcript.wordCount > 18000;
     const transcriptText = minutesLong ? await condenseTranscript(segments) : transcriptForPrompt(segments);
 
-    const { plan } = await buildMinutes({ meeting: { ...meeting, clientId }, client, transcript: transcriptText });
+    const { plan, engine } = await buildMinutes({ meeting: { ...meeting, clientId }, client, transcript: transcriptText });
+    // With a key set, the rules skeleton means Claude failed. Do not save a transcript dump as minutes: fail loudly so Retry is offered.
+    if (engine === "rules" && aiEnabled()) throw new Error("Claude did not answer, so the minutes were not drafted. Check the key, then Retry.");
 
     const previous = clientId
       ? await db.query.meetings.findMany({
@@ -60,12 +64,13 @@ export async function processMeeting(id: string): Promise<void> {
           with: { outputs: true },
         })
       : [];
-    const { notes } = await buildNotes({
+    const { notes, engine: notesEngine } = await buildNotes({
       meeting,
       client,
       segments: minutesLong ? [] : segments,
       previous: previous.map((p) => ({ title: p.title, heldAt: p.heldAt, text: p.outputs.find((o) => o.kind === "notes")?.text || p.mom || "" })),
     });
+    if (notesEngine === "rules" && aiEnabled()) throw new Error("Claude did not answer for the notes, so nothing was saved. Check the key, then Retry.");
     // For a long meeting the notes call reads the condensed text instead of raw segments.
     if (minutesLong && notes.about.length === 0) notes.about.push("Long meeting: notes were drafted from the condensed transcript.");
 
