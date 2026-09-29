@@ -1,8 +1,7 @@
 import { and, desc, eq, gte, inArray, isNull, lte, type SQL } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { activities, changeLog, clients, documents, meetings, milestones, tasks, type ChangeLogRow, type Client, type Meeting, type NewChangeLogRow } from "@/lib/db/schema";
-import { HEALTH } from "@/lib/core/constants";
-import { formatDate } from "@/lib/core/dates";
+import { displayValue } from "@/lib/core/changes";
 import { applyClientChange } from "./clients";
 import { applyMilestoneChange } from "./milestones";
 import { updateTaskFull } from "./tasks";
@@ -62,16 +61,6 @@ export async function countChangesSince(since: Date): Promise<number> {
   const db = await getDb();
   const rows = await db.query.changeLog.findMany({ where: and(gte(changeLog.appliedAt, since), isNull(changeLog.undoneAt)), columns: { id: true } });
   return rows.length;
-}
-
-/** Health values, dates and text all live in the log as strings. This reads them back for display. */
-export function displayValue(field: string, value: string | null): string {
-  if (value === null || value === "") return "none";
-  if (field === "health") return HEALTH[value as keyof typeof HEALTH]?.label ?? value;
-  if (/_date$|^date$/.test(field) && /^\d{4}-\d{2}-\d{2}$/.test(value)) return formatDate(value);
-  if (field === "status" && value === "done") return "Done";
-  if (field === "created") return value;
-  return value;
 }
 
 export type UndoResult = { ok: true } | { ok: false; conflict: true; current: string | null; message: string } | { ok: false; conflict: false; message: string };

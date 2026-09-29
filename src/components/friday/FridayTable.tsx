@@ -155,7 +155,7 @@ function Cell({ row, cellKey, onSave }: { row: ReportRow; cellKey: ReportCell; o
           (e.currentTarget as HTMLDivElement).blur();
         }
       }}
-      className={cn("min-h-[1.5em] whitespace-pre-wrap rounded-[2px] px-1 -mx-1 outline-none hover:bg-surface-2 focus:bg-surface-2 focus:shadow-[inset_0_0_0_1px_var(--ink)]", mono && "num text-[12.5px]", edited && "border-l-2 border-signal pl-2")}
+      className={cn("min-h-[1.5em] whitespace-pre-wrap rounded-[2px] px-1 -mx-1 outline-none hover:bg-surface-2 focus:bg-surface-2 focus:shadow-[inset_0_0_0_1px_var(--ink)]", mono && "num text-[12.5px]", edited && "border-l-2 border-border-strong pl-2")}
       title={edited ? "Edited by hand, kept on regenerate" : "Click to edit"}
     >
       {row[cellKey]}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ChangeWithLinks } from "@/lib/data/changeLog";
-import { displayValue } from "@/lib/data/changeLog";
+import { displayValue } from "@/lib/core/changes";
 import { formatDayHeading, formatTime, toISODate } from "@/lib/core/dates";
 import { clock } from "@/lib/meetings/transcript";
 import { EmptyState } from "@/components/aurora/EmptyState";
