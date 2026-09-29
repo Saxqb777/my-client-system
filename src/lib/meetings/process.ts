@@ -11,6 +11,8 @@ import { getClient } from "@/lib/data/clients";
 import { listVocabulary } from "@/lib/data/vocabulary";
 import { AUTO_LINK_CONFIDENCE, matchClient } from "./match";
 import { transcriptForPrompt } from "./transcript";
+import { toEvidence } from "./evidence";
+import { runAutoUpdates } from "./autoUpdate";
 
 export const MOM_PROMPT_VERSION = "mom-v3";
 
@@ -78,7 +80,7 @@ export async function processMeeting(id: string): Promise<void> {
     const location = plan.location ?? meeting.location;
     const heading = momHeading(client?.code ?? null, title);
     const dateLine = momDateLine(meeting.heldAt, location);
-    const actionItems: ActionItem[] = plan.actionItems.map((a) => ({ text: a.text, owner: a.owner ?? undefined, due: a.due ?? undefined }));
+    const actionItems: ActionItem[] = plan.actionItems.map((a) => ({ text: a.text, owner: a.owner ?? undefined, due: a.due ?? undefined, evidence: toEvidence(a.evidence) }));
     const momText = renderMinutesText({
       clientCode: client?.code ?? null,
       clientName: client?.name ?? "Other Work",
@@ -94,16 +96,22 @@ export async function processMeeting(id: string): Promise<void> {
     const detailsText = renderDetailsText(details, heading, dateLine);
     const notesText = renderNotesText(notes);
     const proposal: PendingProposal = {
-      tasks: plan.tasks,
-      dateChanges: plan.dateChanges,
+      tasks: plan.tasks.map((t) => ({ title: t.title, dueDate: t.dueDate, waitingOn: t.waitingOn, priority: t.priority, evidence: toEvidence(t.evidence) })),
+      dateChanges: plan.dateChanges.map((d) => ({ type: d.type, title: d.title, newDate: d.newDate, markDone: d.markDone, evidence: toEvidence(d.evidence) })),
+      phaseDates: plan.phaseDates ? { startDate: plan.phaseDates.startDate, targetDate: plan.phaseDates.targetDate, evidence: toEvidence(plan.phaseDates.evidence) } : null,
       health: plan.health,
       healthReason: plan.healthReason,
+      healthEvidence: toEvidence(plan.healthEvidence),
       nextStep: plan.nextStep,
+      nextStepEvidence: toEvidence(plan.nextStepEvidence),
+      risks: plan.risks.map((r) => ({ text: r.text, status: r.status, evidence: toEvidence(r.evidence) })),
+      doneItems: plan.doneItems.map((d) => ({ text: d.text, evidence: toEvidence(d.evidence) })),
       notesUpdate: plan.notesUpdate,
       decisions: plan.decisions,
       summary: plan.summary,
       openQuestions: plan.openQuestions,
       reviewedAt: null,
+      autoApplied: null,
     };
     const state = clientId || meeting.otherWork ? "processed" : "needs_review";
 
@@ -146,6 +154,17 @@ export async function processMeeting(id: string): Promise<void> {
       const existing = await db.query.activities.findFirst({ where: and(eq(activities.meetingId, id), eq(activities.type, "meeting")) });
       if (!existing) {
         await db.insert(activities).values({ clientId, type: "meeting", title: `Minutes ready: ${title}`, body: plan.summary, occurredAt: meeting.heldAt, source: "system", meetingId: id });
+      }
+    }
+
+    // Phase 2: apply what the evidence rule allows, park the rest on the Review tab. A failure here keeps the minutes.
+    if (state === "processed") {
+      try {
+        await runAutoUpdates(id);
+      } catch (err) {
+        const message = err instanceof Error ? err.message.slice(0, 300) : "unknown error";
+        console.error(`[orbit] meeting ${id} automatic updates failed: ${message}`);
+        await db.update(meetings).set({ errorMessage: `Minutes saved. Automatic updates did not run: ${message}` }).where(eq(meetings.id, id));
       }
     }
   } catch (err) {

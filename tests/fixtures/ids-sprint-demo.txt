@@ -1,0 +1,12 @@
+[00:00:03] Me: Welcome everyone, this is the IDS DASH sprint four demo.
+[00:00:12] Rania Saleh: Thanks Saaqib. We have the planners and the logistics lead on the call.
+[00:00:24] Me: Today we show the route optimisation screen, the KPI dashboard and the Smarttrace integration status.
+[00:00:40] Tariq Mansour: Before the demo, the KPI definitions we discussed last week are confirmed by our operations head.
+[00:00:52] Me: So the KPI definitions are confirmed, that closes that open point.
+[00:01:05] Rania Saleh: Yes. On Smarttrace, Samtech has not delivered the telematics API keys yet, they promised end of next week.
+[00:01:20] Me: That is a risk for the integration timeline, without the API keys we cannot test live positions.
+[00:01:32] Tariq Mansour: We will chase Samtech. Rania can you own that?
+[00:01:38] Rania Saleh: Yes, I will get the Samtech API keys by 3 October.
+[00:01:48] Me: Thank you. After the demo I will send the demo recording and the notes to everyone today.
+[00:02:00] Tariq Mansour: The demo looks good. Development is on track for the 15 October completion date.
+[00:02:12] Me: Good. The development complete date stays 15 October. Let me start the demo.

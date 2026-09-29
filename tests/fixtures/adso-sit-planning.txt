@@ -1,0 +1,13 @@
+[00:00:05] Me: This is the ADSO TMS SIT cycle two planning call.
+[00:00:14] Karim Fadel: Hi Saaqib. We reviewed the cycle one results, the clearance module passed but the WMS interface did not.
+[00:00:30] Me: Right, the WMS interface failed on the inbound message format.
+[00:00:40] Karim Fadel: Our WMS vendor has not fixed the message format yet, so cycle two cannot start on 1 October.
+[00:00:55] Me: So SIT cycle two is blocked until the WMS vendor delivers the fix.
+[00:01:06] Layla Haddad: The vendor committed to 6 October. We suggest SIT cycle two starts on 8 October.
+[00:01:18] Me: Agreed, SIT cycle two moves to 8 October. We are blocked on the WMS interface until then.
+[00:01:30] Karim Fadel: For cycle two we also need fresh test data for the Jebel Ali clearance scenarios.
+[00:01:42] Me: Karim, can you provide the clearance test data by 5 October?
+[00:01:48] Karim Fadel: Yes, I will provide the clearance test data by 5 October.
+[00:01:56] Me: And I will update the SIT plan and send it to both teams tomorrow.
+[00:02:05] Layla Haddad: Please also confirm whether the customs code list is the latest version.
+[00:02:14] Me: I will confirm the customs code list version with the clearance team.

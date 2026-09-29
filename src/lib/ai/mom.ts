@@ -9,7 +9,13 @@ import { AI_MODEL, FALLBACK_BETAS, aiEnabled, anthropic } from "./client";
 
 export { STANDARD_MOM_FORMAT };
 
-/** The shape Claude returns after reading a transcript. Everything is reviewed by Saaqib before it is saved. */
+/** Where in the transcript a change comes from. The quote must be the exact words, the marker the [m:ss] printed on that line. */
+export const evidenceSchema = z.object({
+  quote: z.string().describe("The exact words from the transcript that justify this, copied verbatim, at least four words, no paraphrase"),
+  at: z.string().nullable().describe("The time marker printed at the start of that transcript line, for example 12:34 or 1:02:03. Null if the transcript has no markers."),
+});
+
+/** The shape Claude returns after reading a transcript. Clear evidence lets Orbit apply a change by itself; the rest waits for Saaqib. */
 export const minutesPlanSchema = z.object({
   title: z.string().describe("Meeting title for the heading, for example OMS x Maqta Pay Joint Working Session. No client code, no date, no Fero prefix."),
   location: z.string().nullable().describe("Where it was held: Microsoft Teams, Zoom, or the place. Null if the transcript does not say."),
@@ -39,6 +45,7 @@ export const minutesPlanSchema = z.object({
       text: z.string().describe("The action as a clean instruction starting with a verb, no owner inside the text. Every item the discussion marks as to be added, to be confirmed or to be shared becomes one row."),
       owner: z.string().nullable().describe("Full name of the person responsible, Fero when the Fero team owns it, or two names joined with and when shared, for example Mohammad Al Sibaei and Diego Cueto"),
       due: z.string().nullable().describe("yyyy-MM-dd if a date was agreed, else null"),
+      evidence: evidenceSchema.nullable().describe("The words where this action was agreed"),
     }),
   ),
   tasks: z.array(
@@ -47,6 +54,7 @@ export const minutesPlanSchema = z.object({
       dueDate: z.string().nullable(),
       waitingOn: z.string().nullable().describe("Set when Saaqib is waiting on someone else to act"),
       priority: z.enum(taskPriorityEnum.enumValues),
+      evidence: evidenceSchema.nullable().describe("The words where Saaqib took this on"),
     }),
   ),
   dateChanges: z.array(
@@ -55,11 +63,35 @@ export const minutesPlanSchema = z.object({
       title: z.string().nullable(),
       newDate: z.string().nullable().describe("yyyy-MM-dd"),
       markDone: z.boolean(),
+      evidence: evidenceSchema.nullable().describe("The words where this date was agreed or the milestone was reported done"),
     }),
   ),
+  phaseDates: z
+    .object({
+      startDate: z.string().nullable().describe("yyyy-MM-dd when the meeting agreed when the current phase starts or started, else null"),
+      targetDate: z.string().nullable().describe("yyyy-MM-dd when the meeting agreed a new target or completion date for the current phase, else null"),
+      evidence: evidenceSchema.nullable(),
+    })
+    .nullable()
+    .describe("Only when the meeting agreed the phase start or target date. Null otherwise."),
   health: z.enum(healthEnum.enumValues).nullable().describe("Only when the meeting clearly changes the project health"),
   healthReason: z.string().nullable(),
+  healthEvidence: evidenceSchema.nullable().describe("The words that show the health changed"),
+  risks: z.array(
+    z.object({
+      text: z.string().describe("The risk, delay or blocker in one sentence, or the risk that was resolved"),
+      status: z.enum(["new", "resolved"]),
+      evidence: evidenceSchema.nullable(),
+    }),
+  ),
+  doneItems: z.array(
+    z.object({
+      text: z.string().describe("Something reported finished in the meeting that may close an open task, one line"),
+      evidence: evidenceSchema.nullable(),
+    }),
+  ),
   nextStep: z.string().nullable().describe("The single most important next step for this client after the meeting, or null"),
+  nextStepEvidence: evidenceSchema.nullable().describe("The words that set this next step"),
   notesUpdate: z.string().describe("The client notes rewritten: keep every existing fact that is still true, fold in what this meeting taught, drop nothing important. Plain paragraphs, under 350 words."),
   openQuestions: z.array(z.string()),
 });
@@ -99,7 +131,8 @@ function systemPrompt(ctx: MinutesContext): string {
     "",
     `Writing style for everything you output: ${WRITING_STYLE_RULES}`,
     "",
-    "Also extract, from the transcript only: decisions and a two sentence summary for the client timeline, Saaqib's own follow ups as tasks (things Fero or Saaqib must do, send, prepare or chase; when someone else must act first, set waitingOn), any moved or agreed project dates as dateChanges matching the client's existing milestones, a health change only if the meeting clearly changed it, and the client's next step.",
+    "Also extract, from the transcript only: decisions and a two sentence summary for the client timeline, Saaqib's own follow ups as tasks (things Fero or Saaqib must do, send, prepare or chase; when someone else must act first, set waitingOn), any moved or agreed project dates as dateChanges matching the client's existing milestones, the phase start or target date only if the meeting agreed one, a health change only if the meeting clearly changed it, risks or delays raised or resolved, things reported finished as doneItems, and the client's next step.",
+    "Evidence: Orbit applies a change to the client by itself only when you point at the words. For every task, action, date change, phase date, health change, risk, done item and next step, set evidence to the exact words from the transcript (copied verbatim, at least four words, never paraphrased) and the time marker printed at the start of that line. If you cannot point at words that say it, set evidence to null and the change waits for Saaqib. Never invent a quote.",
     "notesUpdate: rewrite the client notes below so they stay a short, current briefing. Keep facts that still hold, add what this meeting established, remove what it made obsolete.",
     "Dates: resolve relative dates using the meeting date and yyyy-MM-dd format.",
   ]
@@ -168,12 +201,23 @@ export function rulesMinutes(ctx: MinutesContext): MinutesPlan {
     actionItems: [],
     tasks: [],
     dateChanges: [],
+    phaseDates: null,
     health: null,
     healthReason: null,
+    healthEvidence: null,
+    risks: [],
+    doneItems: [],
     nextStep: null,
+    nextStepEvidence: null,
     notesUpdate: c?.notes ?? "",
     openQuestions: [],
   };
+}
+
+/** Evidence quotes stay exactly as Claude copied them, so they can be found in the transcript again. */
+function keepEvidence<T extends { quote: string; at: string | null } | null | undefined>(e: T): T {
+  if (!e) return e;
+  return { ...e, quote: e.quote.trim(), at: e.at?.trim() || null } as T;
 }
 
 /**
@@ -212,9 +256,21 @@ export function normalizeMinutes(plan: MinutesPlan): MinutesPlan {
     },
     summary: tidy(plan.summary),
     decisions: plan.decisions.map(tidy).filter(Boolean),
-    actionItems: plan.actionItems.map((a) => ({ text: tidy(a.text), owner: a.owner?.trim() || null, due: a.due && iso.test(a.due) ? a.due : null })).filter((a) => a.text),
-    tasks: plan.tasks.map((t) => ({ ...t, title: tidy(t.title), dueDate: t.dueDate && iso.test(t.dueDate) ? t.dueDate : null, waitingOn: t.waitingOn?.trim() || null })),
-    dateChanges: plan.dateChanges.map((d) => ({ ...d, newDate: d.newDate && iso.test(d.newDate) ? d.newDate : null })),
+    actionItems: plan.actionItems.map((a) => ({ text: tidy(a.text), owner: a.owner?.trim() || null, due: a.due && iso.test(a.due) ? a.due : null, evidence: keepEvidence(a.evidence ?? null) })).filter((a) => a.text),
+    tasks: plan.tasks.map((t) => ({ ...t, title: tidy(t.title), dueDate: t.dueDate && iso.test(t.dueDate) ? t.dueDate : null, waitingOn: t.waitingOn?.trim() || null, evidence: keepEvidence(t.evidence ?? null) })),
+    dateChanges: plan.dateChanges.map((d) => ({ ...d, newDate: d.newDate && iso.test(d.newDate) ? d.newDate : null, evidence: keepEvidence(d.evidence ?? null) })),
+    phaseDates:
+      plan.phaseDates && (plan.phaseDates.startDate || plan.phaseDates.targetDate)
+        ? {
+            startDate: plan.phaseDates.startDate && iso.test(plan.phaseDates.startDate) ? plan.phaseDates.startDate : null,
+            targetDate: plan.phaseDates.targetDate && iso.test(plan.phaseDates.targetDate) ? plan.phaseDates.targetDate : null,
+            evidence: keepEvidence(plan.phaseDates.evidence ?? null),
+          }
+        : null,
+    healthEvidence: keepEvidence(plan.healthEvidence ?? null),
+    nextStepEvidence: keepEvidence(plan.nextStepEvidence ?? null),
+    risks: (plan.risks ?? []).map((r) => ({ text: tidy(r.text), status: r.status, evidence: keepEvidence(r.evidence ?? null) })).filter((r) => r.text),
+    doneItems: (plan.doneItems ?? []).map((d) => ({ text: tidy(d.text), evidence: keepEvidence(d.evidence ?? null) })).filter((d) => d.text),
     nextStep: plan.nextStep ? tidy(plan.nextStep) : null,
     healthReason: plan.healthReason ? tidy(plan.healthReason) : null,
     notesUpdate: tidy(plan.notesUpdate),

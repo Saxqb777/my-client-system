@@ -163,7 +163,7 @@ export function MinutesBuilder({ meeting, clientCode, clientName, open, onOpenCh
             <Field
               label={`Action Points, ${plan.actionItems.length}`}
               action={
-                <button type="button" className="link inline-flex items-center gap-1 text-[12px]" onClick={() => update({ actionItems: [...plan.actionItems, { text: "", owner: null, due: null }] })}>
+                <button type="button" className="link inline-flex items-center gap-1 text-[12px]" onClick={() => update({ actionItems: [...plan.actionItems, { text: "", owner: null, due: null, evidence: null }] })}>
                   <Plus className="size-3" /> Add an action
                 </button>
               }

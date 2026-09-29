@@ -1,0 +1,15 @@
+[00:00:04] Me: Good morning. This is the Agthia FMS UAT sign off review, cycle two.
+[00:00:15] Priya Nathan: Morning Saaqib. We closed nineteen of the twenty three defects since Sunday.
+[00:00:28] Me: Good progress. What is left on the list?
+[00:00:36] Priya Nathan: Four remain. Two are the freight cost rounding, one is the ERP posting delay, and one is the driver app login.
+[00:00:55] Farid Aziz: The ERP posting delay is on our side, the Epicor integration team needs two more days.
+[00:01:10] Me: Understood. So the UAT sign off target of 5 October will not hold.
+[00:01:20] Priya Nathan: Correct. We propose UAT sign off moves to 8 October, Thursday, once the four defects are retested.
+[00:01:34] Me: Agreed, UAT sign off moves to 8 October. I will update the plan today.
+[00:01:45] Farid Aziz: Please also send the updated defect tracker to the steering group before Wednesday.
+[00:01:55] Me: I will send the defect tracker version four to the steering group by Wednesday.
+[00:02:08] Priya Nathan: One more thing. Finance flagged the freight cost rounding as a go live blocker if it is not fixed.
+[00:02:22] Me: Noted as a risk. The rounding fix is in the build going to UAT tomorrow.
+[00:02:35] Farid Aziz: And the driver app login issue is closed from our side, the test passed this morning.
+[00:02:46] Me: Good, the driver app login retest is done then. Next step for us is to close the remaining defects and get the sign off on 8 October.
+[00:03:02] Priya Nathan: Agreed. Thank you.

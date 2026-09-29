@@ -6,14 +6,11 @@ import { fromZonedTime } from "date-fns-tz";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth/guard";
 import { TIMEZONE } from "@/lib/core/constants";
-import type { MeetingDetails } from "@/lib/core/notes";
 import { askOrbit, type AskAnswer } from "@/lib/ai/ask";
-import type { MinutesPlan } from "@/lib/ai/mom";
 import { createClient } from "@/lib/data/clients";
-import { getMeetingFull } from "@/lib/data/meetingLibrary";
-import { saveMinutes, type SavedMinutes } from "@/lib/data/meetings";
 import { getDb } from "@/lib/db";
 import { meetings } from "@/lib/db/schema";
+import { applyReview } from "@/lib/meetings/autoUpdate";
 import { createIngestedMeeting } from "@/lib/meetings/ingest";
 import { assignMeeting, processMeeting } from "@/lib/meetings/process";
 import { parseTranscriptFile, parseTranscriptText } from "@/lib/meetings/transcript";
@@ -105,43 +102,24 @@ export async function retryMeetingAction(id: string): Promise<ActionResult> {
   }
 }
 
-const acceptSchema = z.object({ tasks: z.array(z.boolean()), dateChanges: z.array(z.boolean()), health: z.boolean(), nextStep: z.boolean(), notes: z.boolean() });
+const acceptSchema = z.object({
+  tasks: z.array(z.boolean()).default([]),
+  dateChanges: z.array(z.boolean()).default([]),
+  health: z.boolean().default(false),
+  nextStep: z.boolean().default(false),
+  phaseDates: z.boolean().default(false),
+  risks: z.array(z.boolean()).default([]),
+  doneItems: z.array(z.boolean()).default([]),
+  notes: z.boolean().default(false),
+});
 
-/** Review tab: apply the follow ups Claude proposed for a processed meeting. Automatic application is Phase 2. */
-export async function applyProposalAction(id: string, accept: unknown): Promise<ActionResult<SavedMinutes>> {
+/** Review tab: apply the items Saaqib ticked. They go through the same path as automatic changes and are logged. */
+export async function applyProposalAction(id: string, accept: unknown): Promise<ActionResult<{ lines: string[] }>> {
   await requireSession();
   const a = acceptSchema.safeParse(accept);
   if (!a.success) return fail("Bad review state");
   try {
-    const m = await getMeetingFull(id);
-    if (!m || !m.minutes) return fail("No minutes on this meeting");
-    const proposal = m.minutes.proposal;
-    if (!proposal) return fail("Nothing proposed for this meeting");
-    const details = (m.outputs.find((o) => o.kind === "details")?.data ?? {}) as Partial<MeetingDetails>;
-    const plan: MinutesPlan = {
-      title: m.title,
-      location: m.location,
-      attendees: m.attendees,
-      objective: m.minutes.objective,
-      points: m.minutes.points,
-      details: { attendeesFero: details.attendeesFero ?? [], attendeesClient: details.attendeesClient ?? [], agenda: details.agenda ?? [], openPoints: details.openPoints ?? [], nextMeeting: details.nextMeeting ?? null },
-      summary: proposal.summary,
-      decisions: proposal.decisions,
-      actionItems: m.actionItems.map((x) => ({ text: x.text, owner: x.owner ?? null, due: x.due ?? null })),
-      tasks: proposal.tasks,
-      dateChanges: proposal.dateChanges as MinutesPlan["dateChanges"],
-      health: proposal.health,
-      healthReason: proposal.healthReason,
-      nextStep: proposal.nextStep,
-      notesUpdate: proposal.notesUpdate,
-      openQuestions: proposal.openQuestions,
-    };
-    const result = await saveMinutes(id, plan, a.data);
-    const db = await getDb();
-    await db
-      .update(meetings)
-      .set({ minutes: { ...m.minutes, proposal: { ...proposal, reviewedAt: new Date().toISOString() } } })
-      .where(eq(meetings.id, id));
+    const result = await applyReview(id, a.data);
     revalidatePath("/", "layout");
     return ok(result);
   } catch (e) {

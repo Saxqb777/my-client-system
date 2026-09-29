@@ -1,0 +1,6 @@
+[00:00:02] Me: Quick internal product sync. Two topics, the BRD template and the release notes format.
+[00:00:14] Omar Haddad: On the BRD template, product wants one template for all clients with the same section order.
+[00:00:28] Me: Agreed. I will prepare the BRD template draft by Thursday and share it with the product team.
+[00:00:40] Omar Haddad: For release notes, the format is fine, just shorter summaries.
+[00:00:50] Me: Understood. I will also book the design review for next week.
+[00:00:58] Omar Haddad: Thanks Saaqib, that is all from me.

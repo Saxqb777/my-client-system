@@ -77,6 +77,8 @@ export const meetingSourceEnum = pgEnum("meeting_source", ["app", "upload", "mac
 export const meetingProcessingEnum = pgEnum("meeting_processing", ["received", "processing", "processed", "needs_review", "failed"]);
 export const meetingOutputKindEnum = pgEnum("meeting_output_kind", ["details", "notes"]);
 export const vocabularyTypeEnum = pgEnum("vocabulary_type", ["client", "person", "product", "acronym"]);
+export const taskOriginEnum = pgEnum("task_origin", ["manual", "meeting", "email"]);
+export const changeEntityEnum = pgEnum("change_entity", ["client", "milestone", "task", "document"]);
 
 const tsvector = customType<{ data: string }>({
   dataType() {
@@ -108,6 +110,8 @@ export type ActionItem = {
   owner?: string;
   due?: string;
   taskId?: string;
+  /** The transcript words where this action was agreed, when Claude could point at them. */
+  evidence?: Evidence | null;
 };
 
 /** One discussion point in the standard MOM: a short bold topic and the prose under it. */
@@ -116,18 +120,34 @@ export type DiscussionPoint = { topic: string; text: string };
 /** One timed line of a transcript. Speaker is "me" for Saaqib's mic, "other" for everyone else, or a name when known. */
 export type TranscriptSegment = { start: number; end: number; speaker: string; text: string };
 
-/** Follow ups Claude proposed from a transcript that Saaqib has not accepted yet. Phase 2 applies them. */
+/** Where in the transcript a proposed change comes from: the words said and the second they were said at. */
+export type Evidence = { quote: string; at: number | null };
+
+/**
+ * Follow ups Claude proposed from a transcript. Items with clear evidence are applied automatically and logged
+ * in change_log; the rest wait here for the Review tab. Evidence fields are absent on meetings processed before Phase 2.
+ */
 export type PendingProposal = {
-  tasks: { title: string; dueDate: string | null; waitingOn: string | null; priority: "low" | "normal" | "high" | "urgent" }[];
-  dateChanges: { type: string; title: string | null; newDate: string | null; markDone: boolean }[];
+  tasks: { title: string; dueDate: string | null; waitingOn: string | null; priority: "low" | "normal" | "high" | "urgent"; evidence?: Evidence | null }[];
+  dateChanges: { type: string; title: string | null; newDate: string | null; markDone: boolean; evidence?: Evidence | null }[];
   health: "on_track" | "at_risk" | "blocked" | null;
   healthReason: string | null;
+  healthEvidence?: Evidence | null;
   nextStep: string | null;
+  nextStepEvidence?: Evidence | null;
+  /** Phase start and target dates the meeting agreed, with the words that agreed them. */
+  phaseDates?: { startDate: string | null; targetDate: string | null; evidence: Evidence | null } | null;
+  /** Risks or delays raised or resolved in the meeting. */
+  risks?: { text: string; status: "new" | "resolved"; evidence: Evidence | null }[];
+  /** Things the meeting reported finished, matched against open tasks. */
+  doneItems?: { text: string; evidence: Evidence | null }[];
   notesUpdate: string;
   decisions: string[];
   summary: string;
   openQuestions: string[];
   reviewedAt?: string | null;
+  /** Set once the automatic pass ran: when, and how many change_log rows it wrote. */
+  autoApplied?: { at: string; changes: number } | null;
 };
 
 /** The structured minutes behind the MOM text and the Word file. Action points live in action_items. */
@@ -138,6 +158,8 @@ export type MinutesBody = {
   proposal?: PendingProposal | null;
 };
 
+export type ReportCell = "owner" | "done" | "risk" | "next" | "startDate" | "targetDate";
+
 export type ReportRow = {
   clientId: string;
   client: string;
@@ -147,6 +169,8 @@ export type ReportRow = {
   next: string;
   startDate: string;
   targetDate: string;
+  /** Cells Saaqib typed into by hand. A regeneration keeps them unless he resets. */
+  edited?: ReportCell[];
 };
 
 export type ReportSummary = {
@@ -372,6 +396,11 @@ export const tasks = pgTable(
       onDelete: "set null",
     }),
     sortOrder: integer("sort_order").notNull().default(0),
+    /** Where the task came from: typed by hand, an action item in a meeting, or a pasted email or message. */
+    origin: taskOriginEnum("origin").notNull().default("manual"),
+    /** For meeting tasks: the words in the transcript and the second they were said at. */
+    evidenceQuote: text("evidence_quote"),
+    evidenceAt: real("evidence_at"),
     isDemo: boolean("is_demo").notNull().default(false),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
@@ -380,6 +409,34 @@ export const tasks = pgTable(
     index("tasks_status_due_idx").on(t.status, t.dueDate),
     index("tasks_client_idx").on(t.clientId),
   ],
+);
+
+/**
+ * Every change Orbit made by itself from a meeting: what, before and after, why, the transcript quote and second,
+ * and whether Saaqib undid it. Manual changes do not need a row. The activity row written for the change is linked.
+ */
+export const changeLog = pgTable(
+  "change_log",
+  {
+    id: id(),
+    entityType: changeEntityEnum("entity_type").notNull(),
+    entityId: uuid("entity_id").notNull(),
+    clientId: uuid("client_id").references(() => clients.id, { onDelete: "cascade" }),
+    meetingId: uuid("meeting_id").references(() => meetings.id, { onDelete: "set null" }),
+    activityId: uuid("activity_id").references(() => activities.id, { onDelete: "set null" }),
+    /** The column or notion that changed: health, next_step, phase_target_date, date, status, created, risk. */
+    field: text("field").notNull(),
+    /** One readable line, for example "Health: On track to At risk". */
+    label: text("label").notNull(),
+    oldValue: text("old_value"),
+    newValue: text("new_value"),
+    reason: text("reason"),
+    evidenceQuote: text("evidence_quote"),
+    evidenceAt: real("evidence_at"),
+    appliedAt: timestamp("applied_at", { withTimezone: true }).defaultNow().notNull(),
+    undoneAt: timestamp("undone_at", { withTimezone: true }),
+  },
+  (t) => [index("change_log_client_idx").on(t.clientId, t.appliedAt), index("change_log_meeting_idx").on(t.meetingId), index("change_log_entity_idx").on(t.entityType, t.entityId)],
 );
 
 export const documents = pgTable(
@@ -469,6 +526,7 @@ export const clientsRelations = relations(clients, ({ many }) => ({
   meetings: many(meetings),
   documents: many(documents),
   insights: many(insights),
+  changes: many(changeLog),
 }));
 
 export const peopleRelations = relations(people, ({ one }) => ({
@@ -486,6 +544,13 @@ export const activitiesRelations = relations(activities, ({ one }) => ({
 
 export const tasksRelations = relations(tasks, ({ one }) => ({
   client: one(clients, { fields: [tasks.clientId], references: [clients.id] }),
+  sourceMeeting: one(meetings, { fields: [tasks.sourceMeetingId], references: [meetings.id] }),
+}));
+
+export const changeLogRelations = relations(changeLog, ({ one }) => ({
+  client: one(clients, { fields: [changeLog.clientId], references: [clients.id] }),
+  meeting: one(meetings, { fields: [changeLog.meetingId], references: [meetings.id] }),
+  activity: one(activities, { fields: [changeLog.activityId], references: [activities.id] }),
 }));
 
 export const meetingsRelations = relations(meetings, ({ one, many }) => ({
@@ -493,6 +558,7 @@ export const meetingsRelations = relations(meetings, ({ one, many }) => ({
   activities: many(activities),
   transcript: one(meetingTranscripts, { fields: [meetings.id], references: [meetingTranscripts.meetingId] }),
   outputs: many(meetingOutputs),
+  changes: many(changeLog),
 }));
 
 export const meetingTranscriptsRelations = relations(meetingTranscripts, ({ one }) => ({
@@ -527,6 +593,10 @@ export type Meeting = typeof meetings.$inferSelect;
 export type MeetingTranscript = typeof meetingTranscripts.$inferSelect;
 export type MeetingOutput = typeof meetingOutputs.$inferSelect;
 export type VocabularyTerm = typeof vocabulary.$inferSelect;
+export type ChangeLogRow = typeof changeLog.$inferSelect;
+export type NewChangeLogRow = typeof changeLog.$inferInsert;
+export type ChangeEntity = (typeof changeEntityEnum.enumValues)[number];
+export type TaskOrigin = (typeof taskOriginEnum.enumValues)[number];
 export type MeetingSource = (typeof meetingSourceEnum.enumValues)[number];
 export type MeetingProcessing = (typeof meetingProcessingEnum.enumValues)[number];
 export type Document = typeof documents.$inferSelect;

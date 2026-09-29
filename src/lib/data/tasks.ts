@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, gte, inArray, lt, lte, type SQL } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { activities, tasks, type ActivitySource, type Client, type Task, type TaskStatus } from "@/lib/db/schema";
+import { activities, tasks, type ActivitySource, type Client, type Evidence, type Task, type TaskOrigin, type TaskStatus } from "@/lib/db/schema";
 import { todayISO } from "@/lib/core/dates";
 import type { TaskInput, TaskPatch } from "@/lib/validation";
 
@@ -58,11 +58,20 @@ export async function listWaitingTasks(): Promise<TaskWithClient[]> {
   return rows.filter((t) => !t.client?.archivedAt);
 }
 
-export async function createTask(
-  input: TaskInput,
-  source: ActivitySource = "app",
-  links: { sourceActivityId?: string | null; sourceMeetingId?: string | null } = {},
-): Promise<Task> {
+export type TaskLinks = {
+  sourceActivityId?: string | null;
+  sourceMeetingId?: string | null;
+  /** manual by default; meeting for action items Orbit picked up; email for pasted threads. */
+  origin?: TaskOrigin;
+  evidence?: Evidence | null;
+};
+
+export async function createTask(input: TaskInput, source: ActivitySource = "app", links: TaskLinks = {}): Promise<Task> {
+  return (await createTaskFull(input, source, links)).task;
+}
+
+/** Creates the task and returns the activity written for it, so the change log can link the two. */
+export async function createTaskFull(input: TaskInput, source: ActivitySource = "app", links: TaskLinks = {}): Promise<{ task: Task; activityId: string | null }> {
   const db = await getDb();
   const status = input.waitingOn && input.status === "todo" ? "waiting" : input.status;
   const [row] = await db
@@ -73,24 +82,49 @@ export async function createTask(
       waitingSince: status === "waiting" ? todayISO() : null,
       sourceActivityId: links.sourceActivityId ?? null,
       sourceMeetingId: links.sourceMeetingId ?? null,
+      origin: links.origin ?? "manual",
+      evidenceQuote: links.evidence?.quote ?? null,
+      evidenceAt: links.evidence?.at ?? null,
     })
     .returning();
+  let activityId: string | null = null;
   if (input.clientId) {
-    await db.insert(activities).values({
-      clientId: input.clientId,
-      type: "update",
-      title: status === "waiting" ? `Waiting on ${input.waitingOn}: ${row.title}` : `Task added: ${row.title}`,
-      source,
-    });
+    const [a] = await db
+      .insert(activities)
+      .values({
+        clientId: input.clientId,
+        type: "update",
+        title: status === "waiting" ? `Waiting on ${input.waitingOn}: ${row.title}` : `Task added: ${row.title}`,
+        source,
+        meetingId: links.sourceMeetingId ?? null,
+      })
+      .returning({ id: activities.id });
+    activityId = a?.id ?? null;
   }
-  return row;
+  return { task: row, activityId };
 }
 
 export async function updateTask(id: string, patch: TaskPatch, source: ActivitySource = "app"): Promise<Task> {
+  return (await updateTaskFull(id, patch, source)).task;
+}
+
+/** The change itself, with the activity id it wrote (only a completion writes one) and extra links for meeting tasks. */
+export async function updateTaskFull(
+  id: string,
+  patch: TaskPatch,
+  source: ActivitySource = "app",
+  links: { sourceMeetingId?: string | null; evidence?: Evidence | null; origin?: TaskOrigin } = {},
+): Promise<{ task: Task; before: Task; activityId: string | null }> {
   const db = await getDb();
   const before = await db.query.tasks.findFirst({ where: eq(tasks.id, id) });
   if (!before) throw new Error("Task not found");
   const values: Partial<typeof tasks.$inferInsert> = { ...patch };
+  if (links.sourceMeetingId) values.sourceMeetingId = links.sourceMeetingId;
+  if (links.origin) values.origin = links.origin;
+  if (links.evidence) {
+    values.evidenceQuote = links.evidence.quote;
+    values.evidenceAt = links.evidence.at;
+  }
   if (patch.status && patch.status !== before.status) {
     values.completedAt = patch.status === "done" ? new Date() : null;
     if (patch.status === "waiting") values.waitingSince = before.waitingSince ?? todayISO();
@@ -101,15 +135,15 @@ export async function updateTask(id: string, patch: TaskPatch, source: ActivityS
     values.waitingSince = todayISO();
   }
   const [row] = await db.update(tasks).set(values).where(eq(tasks.id, id)).returning();
+  let activityId: string | null = null;
   if (before.clientId && patch.status === "done" && before.status !== "done") {
-    await db.insert(activities).values({
-      clientId: before.clientId,
-      type: "delivery",
-      title: `Done: ${row.title}`,
-      source,
-    });
+    const [a] = await db
+      .insert(activities)
+      .values({ clientId: before.clientId, type: "delivery", title: `Done: ${row.title}`, source, meetingId: links.sourceMeetingId ?? null })
+      .returning({ id: activities.id });
+    activityId = a?.id ?? null;
   }
-  return row;
+  return { task: row, before, activityId };
 }
 
 export async function deleteTask(id: string): Promise<void> {

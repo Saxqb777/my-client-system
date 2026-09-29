@@ -161,11 +161,20 @@ function describeChanges(before: Client, patch: ClientPatch): ChangeLine[] {
   return lines;
 }
 
-export async function updateClient(
+export async function updateClient(id: string, patch: ClientPatch, source: ActivitySource = "app"): Promise<Client> {
+  return (await applyClientChange(id, patch, source, null)).client;
+}
+
+/**
+ * The change itself. Writes one activity per changed field, linked to the meeting when the change came from one,
+ * and returns those activity ids so the change log can point at them.
+ */
+export async function applyClientChange(
   id: string,
   patch: ClientPatch,
   source: ActivitySource = "app",
-): Promise<Client> {
+  meetingId: string | null = null,
+): Promise<{ client: Client; before: Client; activityIds: string[] }> {
   const db = await getDb();
   const before = await db.query.clients.findFirst({ where: eq(clients.id, id) });
   if (!before) throw new Error("Client not found");
@@ -192,12 +201,15 @@ export async function updateClient(
 
   const [row] = await db.update(clients).set(values).where(eq(clients.id, id)).returning();
   const lines = describeChanges(before, patch);
+  let activityIds: string[] = [];
   if (lines.length) {
-    await db.insert(activities).values(
-      lines.map((l) => ({ clientId: id, type: "update" as const, title: l.title, source })),
-    );
+    const inserted = await db
+      .insert(activities)
+      .values(lines.map((l) => ({ clientId: id, type: "update" as const, title: l.title, source, meetingId })))
+      .returning({ id: activities.id });
+    activityIds = inserted.map((a) => a.id);
   }
-  return row;
+  return { client: row, before, activityIds };
 }
 
 export async function setArchived(id: string, archived: boolean): Promise<Client> {

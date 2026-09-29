@@ -56,6 +56,16 @@ export async function createMilestone(input: MilestoneInput, source: ActivitySou
 }
 
 export async function updateMilestone(id: string, patch: MilestonePatch, source: ActivitySource = "app"): Promise<Milestone> {
+  return (await applyMilestoneChange(id, patch, source, null)).milestone;
+}
+
+/** The change itself, returning the activity ids it wrote so the change log can link them. */
+export async function applyMilestoneChange(
+  id: string,
+  patch: MilestonePatch,
+  source: ActivitySource = "app",
+  meetingId: string | null = null,
+): Promise<{ milestone: Milestone; before: Milestone; activityIds: string[] }> {
   const db = await getDb();
   const before = await db.query.milestones.findFirst({ where: eq(milestones.id, id) });
   if (!before) throw new Error("Milestone not found");
@@ -87,12 +97,15 @@ export async function updateMilestone(id: string, patch: MilestonePatch, source:
   }
 
   const [row] = await db.update(milestones).set(values).where(eq(milestones.id, id)).returning();
+  let activityIds: string[] = [];
   if (lines.length) {
-    await db.insert(activities).values(
-      lines.map((title) => ({ clientId: before.clientId, type: "update" as const, title, source })),
-    );
+    const inserted = await db
+      .insert(activities)
+      .values(lines.map((title) => ({ clientId: before.clientId, type: "update" as const, title, source, meetingId })))
+      .returning({ id: activities.id });
+    activityIds = inserted.map((a) => a.id);
   }
-  return row;
+  return { milestone: row, before, activityIds };
 }
 
 export async function deleteMilestone(id: string): Promise<void> {
