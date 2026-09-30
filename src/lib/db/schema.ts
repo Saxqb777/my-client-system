@@ -79,6 +79,8 @@ export const meetingOutputKindEnum = pgEnum("meeting_output_kind", ["details", "
 export const vocabularyTypeEnum = pgEnum("vocabulary_type", ["client", "person", "product", "acronym"]);
 export const taskOriginEnum = pgEnum("task_origin", ["manual", "meeting", "email"]);
 export const changeEntityEnum = pgEnum("change_entity", ["client", "milestone", "task", "document"]);
+export const brdItemKindEnum = pgEnum("brd_item_kind", ["requirement", "business_rule", "exception", "integration", "pain_point"]);
+export const brdItemStatusEnum = pgEnum("brd_item_status", ["open", "covered", "dropped"]);
 
 const tsvector = customType<{ data: string }>({
   dataType() {
@@ -178,6 +180,39 @@ export type ReportSummary = {
   attention: string[];
 };
 
+/** One line of a BRD draft that keeps its links back to the requirement items it came from. */
+export type BrdLine = { id: string; text: string; itemIds: string[] };
+
+/** The draft BRD, fixed sections. Every requirement line points at the brd_items it was written from. */
+export type BrdSections = {
+  purpose: string;
+  scopeIn: string[];
+  scopeOut: string[];
+  stakeholders: { name: string; role: string; side: string }[];
+  currentProcess: string;
+  proposedProcess: string;
+  functional: BrdLine[];
+  nonFunctional: BrdLine[];
+  businessRules: BrdLine[];
+  integrations: BrdLine[];
+  assumptions: string[];
+  dependencies: string[];
+  openQuestions: string[];
+};
+
+/** One finding of a gap check against an existing BRD. */
+export type GapFinding = {
+  kind: "missing" | "contradiction" | "vague";
+  text: string;
+  /** The line in the BRD this is about, when there is one. */
+  brdLine: string | null;
+  /** The requirement item behind it, when there is one. */
+  itemId: string | null;
+  quote: string | null;
+  meetingId: string | null;
+  at: number | null;
+};
+
 // Tables
 
 export const clients = pgTable(
@@ -255,6 +290,8 @@ export const meetings = pgTable(
     processedAt: timestamp("processed_at", { withTimezone: true }),
     /** sha256 of the start minute plus the first words, so the same meeting sent twice stays one row. */
     ingestHash: text("ingest_hash"),
+    /** When the BRD helper last read this meeting for requirements. Null means not yet. */
+    brdExtractedAt: timestamp("brd_extracted_at", { withTimezone: true }),
     attendees: jsonb("attendees")
       .$type<string[]>()
       .notNull()
@@ -439,6 +476,65 @@ export const changeLog = pgTable(
   (t) => [index("change_log_client_idx").on(t.clientId, t.appliedAt), index("change_log_meeting_idx").on(t.meetingId), index("change_log_entity_idx").on(t.entityType, t.entityId)],
 );
 
+/**
+ * Requirements, business rules, exceptions, integration needs and pain points pulled out of a client's meetings.
+ * Each keeps the meeting and the words it came from. Deduped by wording when extracted. Status marks what the BRD covers.
+ */
+export const brdItems = pgTable(
+  "brd_items",
+  {
+    id: id(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    meetingId: uuid("meeting_id").references(() => meetings.id, { onDelete: "set null" }),
+    kind: brdItemKindEnum("kind").notNull().default("requirement"),
+    text: text("text").notNull(),
+    groupName: text("group_name"),
+    evidenceQuote: text("evidence_quote"),
+    evidenceAt: real("evidence_at"),
+    status: brdItemStatusEnum("status").notNull().default("open"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("brd_items_client_idx").on(t.clientId, t.kind), index("brd_items_meeting_idx").on(t.meetingId)],
+);
+
+/** A numbered draft of the BRD for one client. Versions are kept; the latest is what the workspace shows. */
+export const brdDrafts = pgTable(
+  "brd_drafts",
+  {
+    id: id(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    version: integer("version").notNull().default(1),
+    sections: jsonb("sections").$type<BrdSections>().notNull(),
+    model: text("model"),
+    promptVersion: text("prompt_version"),
+    documentId: uuid("document_id"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("brd_drafts_client_idx").on(t.clientId, t.version)],
+);
+
+/** A gap check of an existing BRD (pasted or uploaded) against the requirement items. Findings kept per run. */
+export const brdGapChecks = pgTable(
+  "brd_gap_checks",
+  {
+    id: id(),
+    clientId: uuid("client_id")
+      .notNull()
+      .references(() => clients.id, { onDelete: "cascade" }),
+    sourceName: text("source_name").notNull(),
+    sourceText: text("source_text").notNull(),
+    findings: jsonb("findings").$type<GapFinding[]>().notNull().default(sql`'[]'::jsonb`),
+    model: text("model"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("brd_gap_checks_client_idx").on(t.clientId, t.createdAt)],
+);
+
 export const documents = pgTable(
   "documents",
   {
@@ -527,6 +623,8 @@ export const clientsRelations = relations(clients, ({ many }) => ({
   documents: many(documents),
   insights: many(insights),
   changes: many(changeLog),
+  brdItems: many(brdItems),
+  brdDrafts: many(brdDrafts),
 }));
 
 export const peopleRelations = relations(people, ({ one }) => ({
@@ -545,6 +643,19 @@ export const activitiesRelations = relations(activities, ({ one }) => ({
 export const tasksRelations = relations(tasks, ({ one }) => ({
   client: one(clients, { fields: [tasks.clientId], references: [clients.id] }),
   sourceMeeting: one(meetings, { fields: [tasks.sourceMeetingId], references: [meetings.id] }),
+}));
+
+export const brdItemsRelations = relations(brdItems, ({ one }) => ({
+  client: one(clients, { fields: [brdItems.clientId], references: [clients.id] }),
+  meeting: one(meetings, { fields: [brdItems.meetingId], references: [meetings.id] }),
+}));
+
+export const brdDraftsRelations = relations(brdDrafts, ({ one }) => ({
+  client: one(clients, { fields: [brdDrafts.clientId], references: [clients.id] }),
+}));
+
+export const brdGapChecksRelations = relations(brdGapChecks, ({ one }) => ({
+  client: one(clients, { fields: [brdGapChecks.clientId], references: [clients.id] }),
 }));
 
 export const changeLogRelations = relations(changeLog, ({ one }) => ({
@@ -594,6 +705,12 @@ export type MeetingTranscript = typeof meetingTranscripts.$inferSelect;
 export type MeetingOutput = typeof meetingOutputs.$inferSelect;
 export type VocabularyTerm = typeof vocabulary.$inferSelect;
 export type ChangeLogRow = typeof changeLog.$inferSelect;
+export type BrdItem = typeof brdItems.$inferSelect;
+export type NewBrdItem = typeof brdItems.$inferInsert;
+export type BrdDraft = typeof brdDrafts.$inferSelect;
+export type BrdGapCheck = typeof brdGapChecks.$inferSelect;
+export type BrdItemKind = (typeof brdItemKindEnum.enumValues)[number];
+export type BrdItemStatus = (typeof brdItemStatusEnum.enumValues)[number];
 export type NewChangeLogRow = typeof changeLog.$inferInsert;
 export type ChangeEntity = (typeof changeEntityEnum.enumValues)[number];
 export type TaskOrigin = (typeof taskOriginEnum.enumValues)[number];

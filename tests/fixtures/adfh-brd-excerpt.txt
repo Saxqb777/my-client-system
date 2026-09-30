@@ -1,0 +1,13 @@
+ADFH OMS Business Requirements Document, excerpt for testing (made up)
+
+1. Customer tiers
+The OMS supports four customer tiers: tenant, registered customer, walk in and government.
+Each service charge can have a separate rate for each customer tier.
+
+2. Wallet
+Tenants top up a wallet through Maqta Pay and services are paid from the wallet balance.
+The wallet screen should be user friendly and load fast.
+Reports will include relevant data as needed.
+
+3. Parking
+Parking fees are charged per entry at the gate.

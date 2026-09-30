@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getClient } from "@/lib/data/clients";
 import { changesByActivity } from "@/lib/data/changeLog";
+import { latestDraft, latestGapCheck, listBrdItems, listDrafts, meetingReadCounts, sourceLabel } from "@/lib/data/brd";
+import { renderBrdText } from "@/lib/brd/draft";
+import { BrdWorkspace } from "@/components/brd/BrdWorkspace";
 import { nowMs, todayISO } from "@/lib/core/dates";
 import { journeyDomain } from "@/lib/core/journey";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,6 +32,9 @@ function isUuid(v: string) {
   return /^[0-9a-f-]{36}$/i.test(v);
 }
 
+/** Reading meetings and writing a BRD draft run inside server actions on this page. */
+export const maxDuration = 300;
+
 export default async function ClientPage({ params, searchParams }: Props) {
   const { id } = await params;
   const sp = await searchParams;
@@ -40,7 +46,17 @@ export default async function ClientPage({ params, searchParams }: Props) {
   const now = nowMs();
   const meetingsPending = client.meetings.filter((m) => (m.status === "planned" && m.heldAt.getTime() >= now) || ((m.status === "planned" || m.status === "held") && !m.mom)).length;
   const tab = typeof sp.tab === "string" ? sp.tab : "timeline";
-  const changeRows = await changesByActivity(client.activities.map((a) => a.id));
+  const [changeRows, brdItemsList, brdCounts, brdDraft, brdDraftsList, brdGap] = await Promise.all([
+    changesByActivity(client.activities.map((a) => a.id)),
+    listBrdItems(client.id),
+    meetingReadCounts(client.id),
+    latestDraft(client.id),
+    listDrafts(client.id),
+    latestGapCheck(client.id),
+  ]);
+  const brdSources = new Map(brdItemsList.map((i) => [i.id, sourceLabel(i)]));
+  const brdText = brdDraft ? renderBrdText(brdDraft.sections, { clientName: client.name, version: brdDraft.version, date: brdDraft.createdAt, sources: brdSources }) : "";
+  const brdOpen = brdItemsList.filter((i) => i.status === "open").length;
   const changes = Object.fromEntries(Array.from(changeRows.entries()).map(([aid, c]) => [aid, { id: c.id, undone: Boolean(c.undoneAt), meetingId: c.meetingId }]));
   const today = todayISO();
   const journeyDates = client.milestones.filter((m) => m.status !== "cancelled").map((m) => m.date);
@@ -75,6 +91,9 @@ export default async function ClientPage({ params, searchParams }: Props) {
           <TabsTrigger value="docs">
             Docs <Count n={client.documents.length} />
           </TabsTrigger>
+          <TabsTrigger value="brd">
+            BRD <Count n={brdOpen} />
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="timeline">
           <ClientTimeline clientId={client.id} clientCode={client.code} activities={client.activities} changes={changes} />
@@ -96,6 +115,9 @@ export default async function ClientPage({ params, searchParams }: Props) {
         </TabsContent>
         <TabsContent value="docs">
           <DocumentsPanel documents={client.documents} />
+        </TabsContent>
+        <TabsContent value="brd">
+          <BrdWorkspace clientId={client.id} clientName={client.name} items={brdItemsList} counts={brdCounts} draft={brdDraft} draftText={brdText} drafts={brdDraftsList} gap={brdGap} />
         </TabsContent>
       </Tabs>
     </div>

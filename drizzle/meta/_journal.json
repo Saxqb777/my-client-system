@@ -43,6 +43,13 @@
       "when": 1790701497108,
       "tag": "0005_hard_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790703224663,
+      "tag": "0006_cloudy_maximus",
+      "breakpoints": true
     }
   ]
 }
