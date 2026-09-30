@@ -5,9 +5,9 @@ Written for Saaqib while he is away. Everything here lives on the git branch `cl
 ## 1. Summary
 
 - Part A, Phase 2, is done and on Preview: auto updates from meetings with the evidence rule, a change log with Undo, tasks from action items, the Friday pack, a daily digest on home. 79 tests pass, typecheck and lint clean, every new page checked on desktop, dark and phone.
-- Part B, Phase 4 BRD helper: in progress.
-- Part C, Phase 3 Mac helper: not started.
-- Nothing is live. Nothing was deleted. Migration 0005 exists only on the Neon branch `phase2-preview`.
+- Part B, Phase 4 BRD helper, is done and on Preview: requirements pulled from each client's meetings with the source quote and second, a thirteen section draft BRD where every line links back to its meeting, a gap check of an existing BRD, Word export. 99 tests pass.
+- Part C, Phase 3 Mac helper: in progress.
+- Nothing is live. Nothing was deleted. Migrations 0005 and 0006 exist only on the Neon branch `phase2-preview`.
 - Claude was not reachable from the sandbox, so every Claude path was tested with the rule based fallback plus fixtures. The Preview is where the real Opus 5.5 output is judged.
 
 ## 2. Preview URL and test steps
@@ -39,6 +39,13 @@ A5, the digest
 
 11. Open the home page after step 1. "Today from your meetings" shows the processed meeting, the changes applied (with Undo), the new tasks for you, and any meeting that needs a client or failed. On a quiet day the panel is not shown.
 
+### Part B: BRD helper
+
+12. Open a client, tab BRD (or `/brds` for all clients). Press Read meetings. How to know it worked: a list of requirements, business rules, exceptions, integrations and pain points appears, grouped by topic, each with the meeting, the time and the words it came from. The time opens the transcript on that line. Drop removes an item that does not belong (Show dropped brings it back).
+13. Press Write the draft. The thirteen sections appear: purpose, in and out of scope, stakeholders, current and proposed process, functional, non functional, business rules, integrations, assumptions, dependencies, open questions. Every numbered line (FR1, BR2, INT1) shows its source meeting. Word downloads the same draft on the MOM paper with ID, Requirement and Source tables. Each version is also filed under the client's Docs tab as a BRD.
+14. Gap check: paste a BRD or choose its Word file, press Check against the meetings. How to know it worked: three groups appear. Contradicts the meetings (red), Discussed, not in the BRD, Needs clarity (amber), each with what the client said and where. Mark them covered sets the items the BRD does cover.
+15. Test file for the gap check: `tests/fixtures/adfh-brd-excerpt.txt` (made up, says four tiers where the meeting said three, and has vague lines).
+
 ## 3. Decisions made without you
 
 - Bulk allow: you approved one set of permissions for this block. They live in `.claude/settings.local.json`, git ignored on this machine only.
@@ -53,6 +60,13 @@ A5, the digest
 - Friday pack: the reporting week stays Friday to Thursday; opening `/friday` on a Friday shows the week that ended yesterday, as the existing helper does. Claude writes only the three prose cells; dates and owner come from the record. "Mark final" is a label, it locks nothing.
 - The Friday pack Word file is landscape A4 with the same navy and gold as the MOM, header "Fero | Weekly client status".
 - Long meetings (over 120 minutes) are condensed before Claude reads them, so their evidence markers can be missing; such changes land on the Review tab rather than applying.
+- BRD helper: meetings are read on a button press, not automatically after every meeting, to keep Claude cost under your control. Up to eight meetings per press, three at a time, so one press stays inside the Vercel time limit. Other Work meetings are never read.
+- BRD items that repeat an existing item (similarity 0.7, dropped items included) are skipped, so a dropped item does not come back on the next read.
+- A quote Claude could not copy verbatim is kept as context but without a time, so no link points at the wrong second.
+- The draft keeps every live requirement, rule, exception and integration item: if Claude leaves one out, Orbit appends it to its section in the item's own words. Pain points feed the current process and open questions, not the requirement tables.
+- Each draft is a new numbered version; old versions stay downloadable. Each version is also saved as a BRD document for the client.
+- The gap check does not change item status by itself; "Mark them covered" is a separate click.
+- The Word reader for the gap check reads the document body only (paragraphs and tables, a table row becomes one line); headers, footers, comments and tracked changes are ignored.
 
 ## 4. Blocked
 
@@ -61,7 +75,7 @@ A5, the digest
 ## 5. What you need to do to go live, in order
 
 1. Review the Preview with the steps above and say go.
-2. Apply migration 0005 to Neon main (`drizzle/0005_hard_namorita.sql`, 12 statements, additive: table change_log, two enums, three task columns) and record it in `drizzle.__drizzle_migrations` with hash `3d8da5ee0a374035b0368b017f448be805d03ae614cebb8d0f9ec8c29b33bc9a` and created_at `1790701497108`. A session with the Neon connector does this in one call.
+2. Apply migration 0005 to Neon main (`drizzle/0005_hard_namorita.sql`, 12 statements, additive: table change_log, two enums, three task columns) and record it in `drizzle.__drizzle_migrations` with hash `3d8da5ee0a374035b0368b017f448be805d03ae614cebb8d0f9ec8c29b33bc9a` and created_at `1790701497108`. Then migration 0006 (`drizzle/0006_cloudy_maximus.sql`, 14 statements, additive: brd_items, brd_drafts, brd_gap_checks, two enums, meetings.brd_extracted_at), hash `9d38c83c67cc8acb13a6897e538709a64a6ed97f499482b67d3ee25c30ec7d37`, created_at `1790703224663`. A session with the Neon connector does both in one call.
 3. Merge `claude/phase2-preview` into `claude/zen-volta-b254gb` and push. Vercel deploys production.
 4. Open the home page and `/changes` on production.
 5. Optional tidy: delete the Neon branch `phase2-preview` and the Preview env vars for that branch.
@@ -71,3 +85,4 @@ A5, the digest
 - Each processed meeting now asks Claude for evidence fields inside the same MOM call: no extra call, roughly 10 to 15 percent more output tokens. Estimate 0.30 to 0.70 dollars per meeting on Opus 5.5.
 - Friday pack: one Claude call per generation, all clients in one request, low effort. Roughly 0.05 to 0.15 dollars per pack. Regenerate costs the same again; editing cells costs nothing.
 - The digest, the change log and Undo make no Claude calls.
+- BRD helper: one Claude call per meeting read (about 0.10 to 0.30 dollars each on Opus 5.5, depending on length), one call per draft (about 0.20 to 0.60 dollars), one per gap check (about 0.15 to 0.40 dollars). Nothing runs unless you press the button.
