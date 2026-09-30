@@ -43,8 +43,14 @@ export default async function BrdsPage() {
                 )}
               </td>
               <td className="hidden text-[13px] sm:table-cell">
-                <span className="num">{r.read}</span>
-                <span className="text-muted"> of {r.readable}</span>
+                {r.readable === 0 ? (
+                  <span className="text-muted">No meetings</span>
+                ) : (
+                  <>
+                    <span className="num">{r.read}</span>
+                    <span className="text-muted"> of {r.readable}</span>
+                  </>
+                )}
               </td>
               <td className="text-[13px]">
                 {r.draft ? (
