@@ -8,6 +8,8 @@ import { aiEnabled } from "@/lib/ai/client";
 import { getClient, updateClient } from "@/lib/data/clients";
 import { createMeeting, deleteMeeting, getMeeting, saveMinutes, updateMeeting, type SavedMinutes } from "@/lib/data/meetings";
 import { meetingInputSchema, meetingPatchSchema } from "@/lib/validation";
+import { parseTranscriptFile, transcriptForPrompt } from "@/lib/meetings/transcript";
+import { transcriptFileProblem } from "@/lib/meetings/transcriptFile";
 import type { Meeting } from "@/lib/db/schema";
 import { fail, ok, zodMessage, type ActionResult } from "./result";
 
@@ -51,6 +53,22 @@ export async function deleteMeetingAction(id: string): Promise<ActionResult> {
 const transcriptSchema = z.string().trim().min(40, "Paste the whole transcript or notes, at least a few lines").max(200_000, "That transcript is too long, trim it to the meeting itself");
 
 /** Stores the transcript on the meeting and asks Claude for minutes in the client's format. Nothing else is saved yet. */
+/** A Word transcript dropped on the minutes builder: the browser cannot read .docx, so the server turns it into timed lines. */
+export async function readTranscriptFileAction(formData: FormData): Promise<ActionResult<{ text: string }>> {
+  await requireSession();
+  const file = formData.get("file");
+  if (!(file instanceof File)) return fail("Choose a file");
+  const problem = transcriptFileProblem(file.name, file.size);
+  if (problem) return fail(problem);
+  try {
+    const parsed = await parseTranscriptFile(file.name, await file.arrayBuffer());
+    if (!parsed.segments.length) return fail("Could not read any lines from that transcript");
+    return ok({ text: transcriptForPrompt(parsed.segments) });
+  } catch (e) {
+    return fail(e);
+  }
+}
+
 export async function buildMinutesAction(meetingId: string, transcript: unknown): Promise<ActionResult<{ plan: MinutesPlan; engine: "claude" | "rules"; aiConfigured: boolean }>> {
   await requireSession();
   const parsed = transcriptSchema.safeParse(transcript);

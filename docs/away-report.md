@@ -7,6 +7,7 @@ Written for Saaqib while he is away. Everything here lives on the git branch `cl
 - Part A, Phase 2, is done and on Preview: auto updates from meetings with the evidence rule, a change log with Undo, tasks from action items, the Friday pack, a daily digest on home. 79 tests pass, typecheck and lint clean, every new page checked on desktop, dark and phone.
 - Part B, Phase 4 BRD helper, is done and on Preview: requirements pulled from each client's meetings with the source quote and second, a thirteen section draft BRD where every line links back to its meeting, a gap check of an existing BRD, Word export. 99 tests pass.
 - Part C, Phase 3 Mac helper, is written and documented, not tested: a Swift menu bar app in `mac-helper/` that notices Teams, Zoom and Meet calls, records mic and call audio as two tracks, transcribes on the Mac with WhisperKit and sends the text to Orbit. There is no Mac in the sandbox, so it has never been compiled or run. Expect small fixes on the first build.
+- Your drag and drop ask is done on Preview: drop a transcript file anywhere on Meetings, or onto a client's minutes box. Word files work in both places.
 - Nothing is live. Nothing was deleted. Migrations 0005 and 0006 exist only on the Neon branch `phase2-preview`.
 - Claude was not reachable from the sandbox, so every Claude path was tested with the rule based fallback plus fixtures. The Preview is where the real Opus 5.5 output is judged.
 
@@ -52,6 +53,12 @@ A5, the digest
 17. Before step 6 works, production needs `ORBIT_INGEST_TOKEN` (see section 5). A Preview URL cannot be used by the helper because Vercel's login sits in front of it.
 18. Honest status: this code is untested on a real Mac. Only the pure logic has unit tests (`swift test`, 7 tests), and even those have not been run.
 
+### Drag and drop (your ask during the block)
+
+19. Open `/meetings` and drag a transcript file from Finder anywhere onto the page. How to know it worked: the page turns to paper with "Drop the transcript"; let go and Add a transcript opens with the file attached and the title taken from the file name (`ADFH_x_Fero-BRD-Session-4 Transcript.vtt` becomes `ADFH x Fero BRD Session 4`). Change the title if you like, press Send to Orbit.
+20. Drop a file Orbit cannot read (a video, a PDF): a message says which types work, nothing else happens.
+21. Open a client, Meetings, Add the transcript on a past meeting, drop a Teams .vtt or .docx on the sheet. How to know it worked: the lines appear in the box (a Word file shows as `[0:12] Name: words`), then Build the minutes as before.
+
 ## 3. Decisions made without you
 
 - Bulk allow: you approved one set of permissions for this block. They live in `.claude/settings.local.json`, git ignored on this machine only.
@@ -73,6 +80,10 @@ A5, the digest
 - Each draft is a new numbered version; old versions stay downloadable. Each version is also saved as a BRD document for the client.
 - The gap check does not change item status by itself; "Mark them covered" is a separate click.
 - The Word reader for the gap check reads the document body only (paragraphs and tables, a table row becomes one line); headers, footers, comments and tracked changes are ignored.
+- Drag and drop: built on this Preview branch with the rest, not as a separate change, since the away rules say not to stop and ask. A drop anywhere on `/meetings` opens Add a transcript; on a client the drop works while the minutes sheet is open. One file at a time.
+- Transcript files: .vtt, .srt, .txt, .md and .docx, now up to 4 MB instead of the 10 MB the old text promised. Vercel refuses request bodies over 4.5 MB, and Next.js server actions stopped at 1 MB, so a big file used to fail with no clear reason. The server action limit is raised to 5 MB; a one hour Teams transcript is about 0.1 to 0.4 MB.
+- A title typed by you is never replaced by a dropped file's name. Teams names like "Meeting Transcript" or a recording stamp give no title, so Orbit names the meeting as before.
+- While a file is chosen, the paste box is disabled with a note, because the file wins (it always did, silently).
 - Mac helper, call audio: ScreenCaptureKit, not Core Audio process taps. It has been stable since macOS 13, captures whatever the call app plays without knowing its process, and its permission (Screen and System Audio Recording) is the same one that makes window titles readable for call detection, so one permission covers both. Process taps would avoid the screen permission but tie the recording to one process, which breaks when Teams moves audio to a helper process mid call. The helper records no picture: it takes a 2 by 2 pixel frame once a second and throws it away.
 - Mac helper, your voice: AVAudioEngine on the microphone, kept as its own track, so the transcript says Me and Others without guessing speakers.
 - Mac helper, call detection: every three seconds it asks Core Audio which processes hold the microphone (no permission needed, very cheap), and only then reads window titles. Teams and Zoom count when they hold the mic and a call window is open; Meet counts when a browser holds the mic and a window title starts with "Meet". Minimised windows and other desktops count too. A "Check detection" menu shows what it sees, to tune the rules on your Mac.

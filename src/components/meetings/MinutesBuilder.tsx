@@ -6,7 +6,9 @@ import { FileDown, Loader2, Plus, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import type { Meeting } from "@/lib/db/schema";
 import type { MinutesPlan } from "@/lib/ai/mom";
-import { buildMinutesAction, saveMinutesAction } from "@/actions/meetings";
+import { buildMinutesAction, readTranscriptFileAction, saveMinutesAction } from "@/actions/meetings";
+import { isTextTranscript, TRANSCRIPT_ACCEPT, transcriptFileProblem } from "@/lib/meetings/transcriptFile";
+import { DropOverlay, useWindowFileDrop } from "./FileDrop";
 import { HEALTH, MILESTONE_TYPES } from "@/lib/core/constants";
 import { formatDate, formatDateTime } from "@/lib/core/dates";
 import { momHeading, renderMinutesText } from "@/lib/core/minutes";
@@ -69,11 +71,40 @@ export function MinutesBuilder({ meeting, clientCode, clientName, open, onOpenCh
     });
   }
 
+  const [reading, setReading] = useState(false);
+
+  /** A chosen or dropped file is added under whatever is already in the box. Word files are read on the server. */
   async function onFile(file: File | undefined) {
-    if (!file) return;
-    const text = await file.text();
+    if (!file || stage !== "transcript" || reading) return;
+    const problem = transcriptFileProblem(file.name, file.size);
+    if (problem) {
+      toast.error(problem);
+      return;
+    }
+    let text = "";
+    if (isTextTranscript(file.name)) {
+      text = await file.text();
+    } else {
+      setReading(true);
+      const fd = new FormData();
+      fd.set("file", file);
+      const res = await readTranscriptFileAction(fd);
+      setReading(false);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      text = res.data.text;
+    }
     setTranscript((t) => (t.trim() ? `${t.trim()}\n\n${text}` : text));
+    toast.success(`Added ${file.name}`);
+    if (fileRef.current) fileRef.current.value = "";
   }
+
+  const dragging = useWindowFileDrop((files) => {
+    if (files.length > 1) toast.message("One file at a time. Orbit took the first.");
+    void onFile(files[0]);
+  }, open && stage === "transcript");
 
   const update = (patch: Partial<MinutesPlan>) => setPlan((p) => (p ? { ...p, ...patch } : p));
   const [preview, setPreview] = useState(false);
@@ -104,13 +135,14 @@ export function MinutesBuilder({ meeting, clientCode, clientName, open, onOpenCh
 
         {stage !== "review" && (
           <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
-            <p className="text-[13px] text-muted">Paste the transcript, your notes, or both. Teams and Zoom transcript files work as they are.</p>
+            <DropOverlay show={dragging} title="Drop the transcript" hint="It is added to the box below. Teams and Zoom files (.vtt, .srt, .txt, .md, .docx) work as they are." />
+            <p className="text-[13px] text-muted">Paste the transcript, your notes, or both, or drop a file here. Teams and Zoom transcript files work as they are, Word files too.</p>
             <Textarea value={transcript} onChange={(e) => setTranscript(e.target.value)} placeholder="Paste here" className="min-h-[320px] flex-1 font-mono text-[12.5px] leading-relaxed" disabled={stage === "building"} />
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <input ref={fileRef} type="file" accept=".txt,.vtt,.md,.srt,text/plain" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
-                <Button variant="secondary" size="sm" onClick={() => fileRef.current?.click()} disabled={stage === "building"}>
-                  <Upload /> Upload a file
+                <input ref={fileRef} type="file" accept={TRANSCRIPT_ACCEPT} className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+                <Button variant="secondary" size="sm" onClick={() => fileRef.current?.click()} disabled={stage === "building" || reading}>
+                  {reading ? <Loader2 className="animate-spin" /> : <Upload />} {reading ? "Reading the file" : "Upload a file"}
                 </Button>
                 <span className="num text-[12px] text-muted">{transcript.trim().length.toLocaleString()} characters</span>
               </div>

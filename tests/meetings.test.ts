@@ -4,6 +4,7 @@ import { chunkSegments, clock, mergeRuns, parseClock, parsePlainText, parseTrans
 import { clientTerms, matchClient, type MatchClient } from "@/lib/meetings/match";
 import { ingestHash, transcriptFromBody, ingestBodySchema } from "@/lib/meetings/ingest";
 import { buildVocabularySeed } from "@/lib/data/vocabulary";
+import { extensionOf, isTextTranscript, MAX_TRANSCRIPT_BYTES, titleFromFileName, transcriptFileProblem } from "@/lib/meetings/transcriptFile";
 
 const vtt = readFileSync("tests/fixtures/sample-meeting.vtt", "utf8");
 
@@ -128,5 +129,31 @@ describe("vocabulary seed", () => {
     expect(new Set(terms.map((t) => t.toLowerCase())).size).toBe(terms.length);
     expect(rows.find((r) => r.term === "Saaqib Irfan")?.clientId).toBeNull();
     expect(rows.find((r) => r.term === "Nadia Haddad")?.clientId).toBe("adfh");
+  });
+});
+
+describe("transcript files", () => {
+  it("accepts the five transcript types up to 4 MB", () => {
+    expect(transcriptFileProblem("ADFH Session 3.vtt", 120_000)).toBeNull();
+    expect(transcriptFileProblem("notes.MD", 10)).toBeNull();
+    expect(transcriptFileProblem("Meeting Transcript.docx", 80_000)).toBeNull();
+    expect(transcriptFileProblem("recording.mp4", 1000)).toMatch(/reads \.vtt/);
+    expect(transcriptFileProblem("long.vtt", MAX_TRANSCRIPT_BYTES + 1)).toBe("That file is over 4 MB");
+    expect(transcriptFileProblem("empty.txt", 0)).toBe("That file is empty");
+  });
+
+  it("knows which files the browser can read as text", () => {
+    expect(isTextTranscript("a.vtt")).toBe(true);
+    expect(isTextTranscript("a.srt")).toBe(true);
+    expect(isTextTranscript("a.docx")).toBe(false);
+    expect(extensionOf("no extension")).toBe("");
+  });
+
+  it("makes a title from the file name without dashes or Teams noise", () => {
+    expect(titleFromFileName("ADFH_x_Fero-BRD-Session-3 Transcript.vtt")).toBe("ADFH x Fero BRD Session 3");
+    expect(titleFromFileName("Agthia FMS UAT review (1).docx")).toBe("Agthia FMS UAT review");
+    expect(titleFromFileName("Recording-20260929_090312-Meeting Transcript.vtt")).toBe("");
+    expect(titleFromFileName("Meeting Transcript.docx")).toBe("");
+    expect(titleFromFileName("transcript.txt")).toBe("");
   });
 });

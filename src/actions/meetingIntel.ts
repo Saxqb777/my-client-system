@@ -14,6 +14,7 @@ import { applyReview } from "@/lib/meetings/autoUpdate";
 import { createIngestedMeeting } from "@/lib/meetings/ingest";
 import { assignMeeting, processMeeting } from "@/lib/meetings/process";
 import { parseTranscriptFile, parseTranscriptText } from "@/lib/meetings/transcript";
+import { transcriptFileProblem } from "@/lib/meetings/transcriptFile";
 import { clientInputSchema } from "@/lib/validation";
 import { eq } from "drizzle-orm";
 import { fail, ok, zodMessage, type ActionResult } from "./result";
@@ -35,7 +36,8 @@ export async function uploadTranscriptAction(formData: FormData): Promise<Action
   try {
     let parsed;
     if (file instanceof File && file.size > 0) {
-      if (file.size > 10 * 1024 * 1024) return fail("That file is over 10 MB");
+      const problem = transcriptFileProblem(file.name, file.size);
+      if (problem) return fail(problem);
       parsed = await parseTranscriptFile(file.name, await file.arrayBuffer());
     } else if (fields.data.text.trim().length >= 40) {
       parsed = parseTranscriptText(fields.data.text);
