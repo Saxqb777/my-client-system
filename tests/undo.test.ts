@@ -159,3 +159,25 @@ describe("automatic updates and undo against a real database", () => {
     expect(rows.find((r) => r.field === "next_step")?.reason).toBe("Accepted by Saaqib on the Review tab");
   });
 });
+
+describe("meetings that ask for a transcript", () => {
+  it("never asks for one when the meeting arrived with its transcript", async () => {
+    const { getDb } = await import("@/lib/db");
+    const { clients, meetings } = await import("@/lib/db/schema");
+    const { listMeetingsAwaitingMinutes } = await import("@/lib/data/meetings");
+    const db = await getDb();
+    const [client] = await db.insert(clients).values({ name: "IDS DASH", code: "IDS", phase: "development", health: "on_track" }).returning();
+    const past = new Date("2026-09-20T06:00:00Z");
+    await db.insert(meetings).values([
+      { clientId: client.id, title: "Sprint review set in Orbit", heldAt: past, status: "held" },
+      { clientId: client.id, title: "Uploaded, still drafting", heldAt: past, status: "held", source: "upload", processing: "processing" },
+      { clientId: client.id, title: "Uploaded, failed", heldAt: past, status: "held", source: "upload", processing: "failed" },
+      { clientId: null, title: "Mac helper, needs a client", heldAt: past, status: "held", source: "mac_helper", processing: "needs_review" },
+    ]);
+    const titles = (await listMeetingsAwaitingMinutes()).map((m) => m.title);
+    expect(titles).toContain("Sprint review set in Orbit");
+    expect(titles).not.toContain("Uploaded, still drafting");
+    expect(titles).not.toContain("Uploaded, failed");
+    expect(titles).not.toContain("Mac helper, needs a client");
+  });
+});

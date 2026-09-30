@@ -39,7 +39,8 @@ export async function listUpcomingMeetings(days = 14): Promise<MeetingWithClient
   return (rows as MeetingWithClient[]).filter((m) => !m.client?.archivedAt);
 }
 
-/** Meetings whose time has passed and that have no minutes yet. These ask for a transcript. */
+/** Meetings whose time has passed and that have no minutes yet. These ask for a transcript.
+ * A meeting that arrived with its transcript (upload, Mac helper) is in the pipeline instead, so it never asks. */
 export async function listMeetingsAwaitingMinutes(): Promise<MeetingWithClient[]> {
   const db = await getDb();
   const rows = await db.query.meetings.findMany({
@@ -48,7 +49,7 @@ export async function listMeetingsAwaitingMinutes(): Promise<MeetingWithClient[]
     orderBy: [desc(meetings.heldAt)],
     limit: 20,
   });
-  return (rows as MeetingWithClient[]).filter((m) => !m.client?.archivedAt && !m.mom);
+  return (rows as MeetingWithClient[]).filter((m) => !m.client?.archivedAt && !m.mom && !m.processing);
 }
 
 export async function getMeeting(id: string): Promise<MeetingWithClient | null> {

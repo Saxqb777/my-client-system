@@ -86,3 +86,18 @@ describe("monthTicks", () => {
     expect(ticks.map((t) => t.label)).toEqual(["Jan 2027"]);
   });
 });
+
+describe("reserved space on the rail", () => {
+  it("keeps labels off the Today label", () => {
+    const domain = journeyDomain(["2026-09-01", "2026-10-31"], "2026-09-30");
+    const width = 800;
+    const todayPx = fractionFor("2026-09-30", domain) * width;
+    const placed = layoutJourney([{ date: "2026-09-29", title: "Integration workshop two" }], domain, width, { reserved: [{ lane: 0, iv: [todayPx, todayPx + 38] }] });
+    const p = placed[0];
+    const w = Math.max(44, Math.min(120, "Integration workshop two".length * 6.4 + 4));
+    const iv = p.anchor === "center" ? [p.px - w / 2, p.px + w / 2] : p.anchor === "start" ? [p.px + 10, p.px + 10 + w] : [p.px - 10 - w, p.px - 10];
+    const overlaps = p.lane === 0 && iv[0] < todayPx + 38 && iv[1] > todayPx;
+    expect(p.hidden).toBe(false);
+    expect(overlaps).toBe(false);
+  });
+});

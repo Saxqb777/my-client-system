@@ -16,10 +16,23 @@ import { MeetingForm } from "./MeetingForm";
 import { MinutesBuilder } from "./MinutesBuilder";
 import { cn } from "@/lib/utils";
 
-type Tone = "upcoming" | "needs" | "past";
+type Tone = "upcoming" | "needs" | "pipeline" | "past";
+
+/** Where a meeting that arrived with its transcript stands, for the client tab. */
+function pipelineLine(m: Meeting): { text: string; tone: "muted" | "warn" | "bad" } {
+  switch (m.processing) {
+    case "failed":
+      return { text: "Orbit could not draft the minutes. Open it to retry.", tone: "bad" };
+    case "needs_review":
+      return { text: "Needs your review before anything is filed.", tone: "warn" };
+    default:
+      return { text: "Transcript received. Orbit is drafting the minutes.", tone: "muted" };
+  }
+}
 
 function MeetingRow({ m, tone, pending, onEdit, onMinutes, onCancel, onDelete }: { m: Meeting; tone: Tone; pending: boolean; onEdit: () => void; onMinutes: () => void; onCancel: () => void; onDelete: () => void }) {
   const [openMom, setOpenMom] = useState(false);
+  const line = tone === "pipeline" ? pipelineLine(m) : null;
   function copy(text: string) {
     navigator.clipboard.writeText(text).then(() => toast.success("Minutes copied"));
   }
@@ -35,6 +48,13 @@ function MeetingRow({ m, tone, pending, onEdit, onMinutes, onCancel, onDelete }:
             {m.attendees.length ? m.attendees.join(", ") : "No attendees listed"}
             {m.location ? `, ${m.location}` : ""}
           </p>
+          {line && (
+            <p className={cn("mt-1 text-[12.5px]", line.tone === "bad" ? "text-bad" : line.tone === "warn" ? "text-warn" : "text-muted")}>
+              <Link href={`/meetings/${m.id}`} className="hover:underline">
+                {line.text}
+              </Link>
+            </p>
+          )}
           {tone === "needs" && (
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Button size="sm" onClick={onMinutes}>
@@ -74,10 +94,10 @@ function MeetingRow({ m, tone, pending, onEdit, onMinutes, onCancel, onDelete }:
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {tone !== "past" && <DropdownMenuItem onSelect={onEdit}>Edit</DropdownMenuItem>}
+              {(tone === "upcoming" || tone === "needs") && <DropdownMenuItem onSelect={onEdit}>Edit</DropdownMenuItem>}
               {tone === "upcoming" && <DropdownMenuItem onSelect={onMinutes}>Add transcript now</DropdownMenuItem>}
               {tone === "past" && m.mom && <DropdownMenuItem onSelect={onMinutes}>Rebuild minutes</DropdownMenuItem>}
-              {tone !== "past" && <DropdownMenuItem onSelect={onCancel}>Cancel meeting</DropdownMenuItem>}
+              {(tone === "upcoming" || tone === "needs") && <DropdownMenuItem onSelect={onCancel}>Cancel meeting</DropdownMenuItem>}
               <DropdownMenuSeparator />
               <DropdownMenuItem danger onSelect={onDelete}>
                 Delete
@@ -97,7 +117,9 @@ export function MeetingsPanel({ clientId, clientCode, clientName, meetings, peop
   const [minutesFor, setMinutesFor] = useState<Meeting | null>(null);
 
   const upcoming = meetings.filter((m) => m.status === "planned" && m.heldAt.getTime() >= now).sort((a, b) => a.heldAt.getTime() - b.heldAt.getTime());
-  const needMinutes = meetings.filter((m) => (m.status === "planned" || m.status === "held") && m.heldAt.getTime() < now && !m.mom);
+  // A meeting that came with its transcript (upload, Mac helper) never asks for one; it shows where it stands instead.
+  const inPipeline = meetings.filter((m) => m.processing && m.processing !== "processed" && !m.mom);
+  const needMinutes = meetings.filter((m) => (m.status === "planned" || m.status === "held") && m.heldAt.getTime() < now && !m.mom && !m.processing);
   const past = meetings.filter((m) => m.status === "minuted" || m.status === "cancelled" || (m.mom && m.status !== "planned"));
 
   function run(fn: () => Promise<{ ok: boolean; error?: string }>, done?: string) {
@@ -125,7 +147,7 @@ export function MeetingsPanel({ clientId, clientCode, clientName, meetings, peop
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <p className="text-[14px] text-muted">
-          {upcoming.length} upcoming, {needMinutes.length} waiting for a transcript, {past.length} minuted
+          {upcoming.length} upcoming, {needMinutes.length} waiting for a transcript{inPipeline.length ? `, ${inPipeline.length} in progress` : ""}, {past.length} minuted
         </p>
         <Button size="sm" variant="secondary" onClick={() => setForm("new")}>
           <CalendarPlus /> Set a meeting
@@ -140,6 +162,17 @@ export function MeetingsPanel({ clientId, clientCode, clientName, meetings, peop
           <ul>
             {needMinutes.map((m) => (
               <MeetingRow key={m.id} {...rowProps(m, "needs")} />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {inPipeline.length > 0 && (
+        <section>
+          <h3 className="label mb-1 border-b border-border pb-1">In progress</h3>
+          <ul>
+            {inPipeline.map((m) => (
+              <MeetingRow key={m.id} {...rowProps(m, "pipeline")} />
             ))}
           </ul>
         </section>

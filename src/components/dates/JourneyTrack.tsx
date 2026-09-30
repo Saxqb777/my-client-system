@@ -9,7 +9,7 @@ import type { Health, Milestone } from "@/lib/db/schema";
 import { deleteMilestoneAction, updateMilestoneAction } from "@/actions/milestones";
 import { MILESTONE_TYPES } from "@/lib/core/constants";
 import { countdownLabel, delayText, formatDate, type ISODate } from "@/lib/core/dates";
-import { dateAt, fractionFor, layoutJourney, monthTicks, type JourneyDomain, type Placed } from "@/lib/core/journey";
+import { dateAt, fractionFor, layoutJourney, monthTicks, type Interval, type JourneyDomain, type Lane, type Placed } from "@/lib/core/journey";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AddDateDialog, MoveDateDialog } from "./MilestoneDialogs";
@@ -54,8 +54,15 @@ export function JourneyTrack({ client, milestones, domain, today, variant = "row
   const [moving, setMoving] = useState<{ key: number; milestone: Milestone; date: string } | null>(null);
 
   const visible = milestones.filter((m) => m.status !== "cancelled");
-  const placed = layoutJourney(visible, domain, Math.max(width, 1));
   const todayX = fractionFor(today, domain) * 100;
+  const ticks = variant === "solo" ? monthTicks(domain) : [];
+  // The solo rail writes "Today" in the top lane and the month names in the bottom lane, just right of their
+  // lines; milestone labels keep clear of both.
+  const w = Math.max(width, 1);
+  const todayPx = (todayX / 100) * w;
+  const reserved: { lane: Lane; iv: Interval }[] =
+    variant === "solo" ? [{ lane: 0, iv: [todayPx, todayPx + 38] }, ...ticks.map((t) => ({ lane: 1 as Lane, iv: [t.fraction * w, t.fraction * w + 30] as Interval }))] : [];
+  const placed = layoutJourney(visible, domain, w, { reserved });
   const nextId = visible.filter((m) => m.status === "upcoming" && m.date >= today).sort((a, b) => a.date.localeCompare(b.date))[0]?.id ?? null;
   const shown = drag?.moved ? null : (active ?? hover);
   const card = shown ? placed.find((p) => p.item.id === shown) ?? null : null;
@@ -122,8 +129,6 @@ export function JourneyTrack({ client, milestones, domain, today, variant = "row
     if (e.target !== e.currentTarget) return;
     setAdding({ key: Date.now(), date: dateAt(fractionAt(e.clientX), domain) });
   }
-
-  const ticks = variant === "solo" ? monthTicks(domain) : [];
 
   return (
     <div className={cn("relative", className)}>

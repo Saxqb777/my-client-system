@@ -46,7 +46,7 @@ export type Lane = 0 | 1;
 export type Anchor = "center" | "start" | "end";
 export type Placed<T> = { item: T; fraction: number; px: number; lane: Lane; anchor: Anchor; compact: boolean; hidden: boolean };
 
-type Interval = [number, number];
+export type Interval = [number, number];
 
 function fits(iv: Interval, taken: Interval[], gap: number, width: number): boolean {
   if (iv[0] < 0 || iv[1] > width) return false;
@@ -59,7 +59,12 @@ function fits(iv: Interval, taken: Interval[], gap: number, width: number): bool
  * hanging to the left, in the lane above the rail or the lane below; failing that it shrinks to the date
  * alone, and failing that it hides and the mark speaks for itself (hover still shows everything).
  */
-export function layoutJourney<T extends { date: ISODate; title: string }>(items: T[], domain: JourneyDomain, width: number, opts: { minGap?: number; labelWidth?: (title: string) => number; dateWidth?: number; labelGap?: number; hang?: number } = {}): Placed<T>[] {
+export function layoutJourney<T extends { date: ISODate; title: string }>(
+  items: T[],
+  domain: JourneyDomain,
+  width: number,
+  opts: { minGap?: number; labelWidth?: (title: string) => number; dateWidth?: number; labelGap?: number; hang?: number; reserved?: { lane: Lane; iv: Interval }[] } = {},
+): Placed<T>[] {
   const minGap = opts.minGap ?? 16;
   const labelGap = opts.labelGap ?? 6;
   const hang = opts.hang ?? 10;
@@ -67,7 +72,9 @@ export function layoutJourney<T extends { date: ISODate; title: string }>(items:
   const labelWidth = opts.labelWidth ?? ((title: string) => Math.max(dateWidth, Math.min(120, title.length * 6.4 + 4)));
   const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date) || a.title.localeCompare(b.title));
   const out: Placed<T>[] = [];
+  // Space already used by something else on the rail, such as the Today label, is off limits for labels.
   const taken: [Interval[], Interval[]] = [[], []];
+  for (const r of opts.reserved ?? []) taken[r.lane].push(r.iv);
   let lastPx = -Infinity;
   for (const item of sorted) {
     const fraction = fractionFor(item.date, domain);
