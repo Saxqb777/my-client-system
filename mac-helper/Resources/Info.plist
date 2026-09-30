@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>ai.fero.orbit-helper</string>
+	<key>CFBundleName</key>
+	<string>Orbit Helper</string>
+	<key>CFBundleDisplayName</key>
+	<string>Orbit Helper</string>
+	<key>CFBundleExecutable</key>
+	<string>OrbitHelper</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.2</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Orbit Helper records your side of client calls so Orbit can write the minutes. Audio stays on this Mac and is deleted after transcription.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Orbit Helper reads the title and attendees of the meeting you are in, so Orbit files the minutes under the right client.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Orbit Helper reads the title and attendees of the meeting you are in, so Orbit files the minutes under the right client.</string>
+</dict>
+</plist>

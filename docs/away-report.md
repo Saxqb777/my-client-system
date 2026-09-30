@@ -6,7 +6,7 @@ Written for Saaqib while he is away. Everything here lives on the git branch `cl
 
 - Part A, Phase 2, is done and on Preview: auto updates from meetings with the evidence rule, a change log with Undo, tasks from action items, the Friday pack, a daily digest on home. 79 tests pass, typecheck and lint clean, every new page checked on desktop, dark and phone.
 - Part B, Phase 4 BRD helper, is done and on Preview: requirements pulled from each client's meetings with the source quote and second, a thirteen section draft BRD where every line links back to its meeting, a gap check of an existing BRD, Word export. 99 tests pass.
-- Part C, Phase 3 Mac helper: in progress.
+- Part C, Phase 3 Mac helper, is written and documented, not tested: a Swift menu bar app in `mac-helper/` that notices Teams, Zoom and Meet calls, records mic and call audio as two tracks, transcribes on the Mac with WhisperKit and sends the text to Orbit. There is no Mac in the sandbox, so it has never been compiled or run. Expect small fixes on the first build.
 - Nothing is live. Nothing was deleted. Migrations 0005 and 0006 exist only on the Neon branch `phase2-preview`.
 - Claude was not reachable from the sandbox, so every Claude path was tested with the rule based fallback plus fixtures. The Preview is where the real Opus 5.5 output is judged.
 
@@ -46,6 +46,12 @@ A5, the digest
 14. Gap check: paste a BRD or choose its Word file, press Check against the meetings. How to know it worked: three groups appear. Contradicts the meetings (red), Discussed, not in the BRD, Needs clarity (amber), each with what the client said and where. Mark them covered sets the items the BRD does cover.
 15. Test file for the gap check: `tests/fixtures/adfh-brd-excerpt.txt` (made up, says four tiers where the meeting said three, and has vague lines).
 
+### Part C: Mac helper
+
+16. Follow `docs/mac-helper-setup.md` step by step on your Mac. Each step ends with "How to know it worked". Stop at the first step that does not match and send me the exact message.
+17. Before step 6 works, production needs `ORBIT_INGEST_TOKEN` (see section 5). A Preview URL cannot be used by the helper because Vercel's login sits in front of it.
+18. Honest status: this code is untested on a real Mac. Only the pure logic has unit tests (`swift test`, 7 tests), and even those have not been run.
+
 ## 3. Decisions made without you
 
 - Bulk allow: you approved one set of permissions for this block. They live in `.claude/settings.local.json`, git ignored on this machine only.
@@ -67,10 +73,21 @@ A5, the digest
 - Each draft is a new numbered version; old versions stay downloadable. Each version is also saved as a BRD document for the client.
 - The gap check does not change item status by itself; "Mark them covered" is a separate click.
 - The Word reader for the gap check reads the document body only (paragraphs and tables, a table row becomes one line); headers, footers, comments and tracked changes are ignored.
+- Mac helper, call audio: ScreenCaptureKit, not Core Audio process taps. It has been stable since macOS 13, captures whatever the call app plays without knowing its process, and its permission (Screen and System Audio Recording) is the same one that makes window titles readable for call detection, so one permission covers both. Process taps would avoid the screen permission but tie the recording to one process, which breaks when Teams moves audio to a helper process mid call. The helper records no picture: it takes a 2 by 2 pixel frame once a second and throws it away.
+- Mac helper, your voice: AVAudioEngine on the microphone, kept as its own track, so the transcript says Me and Others without guessing speakers.
+- Mac helper, call detection: every three seconds it asks Core Audio which processes hold the microphone (no permission needed, very cheap), and only then reads window titles. Teams and Zoom count when they hold the mic and a call window is open; Meet counts when a browser holds the mic and a window title starts with "Meet". Minimised windows and other desktops count too. A "Check detection" menu shows what it sees, to tune the rules on your Mac.
+- Mac helper, timing: a call ends after 90 seconds without it (grace for a quick rejoin), calls under a minute and recordings with under 20 seconds of speech are not sent. If the system audio skips a quiet stretch, silence is written so both tracks stay on the same clock.
+- Mac helper, speech model: WhisperKit `large-v3-v20240930_turbo`, Orbit's vocabulary (client names, people, acronyms) fed in as the prompt so names come out right. The vocabulary is cached on the Mac for offline calls.
+- Mac helper, sending: every transcript is saved to a queue folder first, then sent. A network error, a server error, a rate limit or a wrong token keeps it waiting (retry after 30 s, 2 min, 10 min, 30 min, then hourly, and at once when the network returns). Only a body Orbit rejects as invalid moves to a failed folder. After sending, it polls the meeting status and asks Orbit to process it again once if it sits for five minutes.
+- Mac helper, privacy: raw audio is deleted after transcription by default (menu toggle to keep it), kept only when transcription fails. The token lives in the Keychain. The log never holds what was said.
+- Mac helper, build: Swift Package plus `build-app.sh` that assembles and ad hoc signs the .app, instead of an Xcode project, so it builds from Terminal with the command line tools. The downside: macOS may ask for the permissions again after a rebuild.
+- Mac helper, default address: production (`orbit-eta-brown.vercel.app`), because Preview sits behind the Vercel login.
 
 ## 4. Blocked
 
 - Nothing blocked. Claude cannot be called from the sandbox, so Opus output quality for Phase 2 (evidence quotes, Friday cells) is only judged on Preview.
+- The Mac helper cannot be built or run here (no Mac, no Swift). It needs your Mac for its first build and test.
+- The helper needs `ORBIT_INGEST_TOKEN` on Production. The go live session was not allowed to read a generated token, so this step is yours (section 5, step 4).
 
 ## 5. What you need to do to go live, in order
 
@@ -78,11 +95,14 @@ A5, the digest
 2. Apply migration 0005 to Neon main (`drizzle/0005_hard_namorita.sql`, 12 statements, additive: table change_log, two enums, three task columns) and record it in `drizzle.__drizzle_migrations` with hash `3d8da5ee0a374035b0368b017f448be805d03ae614cebb8d0f9ec8c29b33bc9a` and created_at `1790701497108`. Then migration 0006 (`drizzle/0006_cloudy_maximus.sql`, 14 statements, additive: brd_items, brd_drafts, brd_gap_checks, two enums, meetings.brd_extracted_at), hash `9d38c83c67cc8acb13a6897e538709a64a6ed97f499482b67d3ee25c30ec7d37`, created_at `1790703224663`. A session with the Neon connector does both in one call.
 3. Merge `claude/phase2-preview` into `claude/zen-volta-b254gb` and push. Vercel deploys production.
 4. Open the home page and `/changes` on production.
-5. Optional tidy: delete the Neon branch `phase2-preview` and the Preview env vars for that branch.
+5. For the Mac helper: vercel.com, project orbit, Settings, Environment Variables, add `ORBIT_INGEST_TOKEN` for Production only with a long random value (in Terminal: `openssl rand -hex 32`), mark it Sensitive, then Redeploy production once. Put the same value in the Keychain (setup guide step 5).
+6. Build and test the helper with `docs/mac-helper-setup.md`.
+7. Optional tidy: delete the Neon branch `phase2-preview` and the Preview env vars for that branch.
 
 ## 6. Cost notes
 
 - Each processed meeting now asks Claude for evidence fields inside the same MOM call: no extra call, roughly 10 to 15 percent more output tokens. Estimate 0.30 to 0.70 dollars per meeting on Opus 5.5.
 - Friday pack: one Claude call per generation, all clients in one request, low effort. Roughly 0.05 to 0.15 dollars per pack. Regenerate costs the same again; editing cells costs nothing.
 - The digest, the change log and Undo make no Claude calls.
+- Mac helper: transcription runs on your Mac, so it costs nothing. Each meeting it sends is processed by Orbit exactly like an upload (the MOM cost above). The rate limit stays at 30 meetings an hour.
 - BRD helper: one Claude call per meeting read (about 0.10 to 0.30 dollars each on Opus 5.5, depending on length), one call per draft (about 0.20 to 0.60 dollars), one per gap check (about 0.15 to 0.40 dollars). Nothing runs unless you press the button.
