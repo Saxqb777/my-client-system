@@ -55,6 +55,13 @@ describe("reading requirements from a meeting, rules", () => {
     expect(items.every((i) => i.evidence?.at === null)).toBe(true);
   });
 
+  it("never uses a placeholder minutes topic as a group", () => {
+    const t = parseVtt(readFileSync("tests/fixtures/sample-meeting.vtt", "utf8"));
+    const items = rulesExtract(t.segments, [{ topic: "Transcript", text: t.fullText.slice(0, 1200) }]);
+    expect(items.every((i) => i.group !== "Transcript")).toBe(true);
+    expect(rulesExtractMinutes([{ topic: "Transcript", text: "The deposit policy is one month of estimated charges." }])[0].group).toBeNull();
+  });
+
   it("tidies filler openings and drops near duplicates", () => {
     expect(tidyLine("So, and the wallet balance must be visible.")).toBe("The wallet balance must be visible");
     const kept = dedupeItems([{ text: "Each service charge can have a different rate per tier" }], [{ text: "Each service charge has a different rate per customer tier" }, { text: "The deposit policy is one month of charges" }]);

@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import type { BrdDraft, BrdGapCheck, BrdItemKind, BrdLine, BrdSections, GapFinding } from "@/lib/db/schema";
 import type { BrdItemWithMeeting } from "@/lib/data/brd";
 import { extractBrdAction, gapCheckAction, markCoveredAction, setBrdItemStatusAction, writeBrdDraftAction } from "@/actions/brd";
-import { ITEM_KINDS, KIND_ORDER } from "@/lib/brd/extract";
+import { ITEM_KINDS, KIND_ORDER, realTopic } from "@/lib/brd/extract";
 import { BRD_SECTIONS, LINE_SECTIONS } from "@/lib/brd/draft";
 import { GAP_KINDS } from "@/lib/brd/gap";
 import { formatDate, formatDateTime } from "@/lib/core/dates";
@@ -65,7 +65,7 @@ export function BrdWorkspace({ clientId, clientName, items, counts, draft, draft
   const shown = live.filter((i) => kind === "all" || i.kind === kind);
   const grouped = new Map<string, BrdItemWithMeeting[]>();
   for (const i of shown) {
-    const g = i.groupName ?? "Other";
+    const g = realTopic(i.groupName) ?? "Other";
     grouped.set(g, [...(grouped.get(g) ?? []), i]);
   }
   const groups = Array.from(grouped.entries()).sort((a, b) => (a[0] === "Other" ? 1 : b[0] === "Other" ? -1 : a[0].localeCompare(b[0])));

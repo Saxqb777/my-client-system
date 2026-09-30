@@ -42,11 +42,19 @@ export function classify(sentence: string): BrdItemKind | null {
   return null;
 }
 
+/** Topic heads that are placeholders, not topics: the minutes skeleton Orbit writes when Claude is off uses "Transcript". */
+const NOT_A_TOPIC = new Set(["transcript", "other", "general", "misc", "notes"]);
+
+export function realTopic(topic: string | null | undefined): string | null {
+  const t = (topic ?? "").trim();
+  return t && !NOT_A_TOPIC.has(t.toLowerCase()) ? t : null;
+}
+
 /** The minutes topic a sentence belongs to, by shared words. */
 export function groupFor(sentence: string, points: DiscussionPoint[]): string | null {
   let best: { topic: string; s: number } | null = null;
   for (const p of points) {
-    if (!p.topic.trim()) continue;
+    if (!realTopic(p.topic)) continue;
     const s = Math.max(similarity(sentence, p.text), similarity(sentence, p.topic));
     if (s >= 0.34 && (!best || s > best.s)) best = { topic: p.topic.trim(), s };
   }
@@ -81,7 +89,7 @@ export function rulesExtractMinutes(points: DiscussionPoint[]): ExtractedItem[] 
     for (const sentence of splitSentences(p.text)) {
       const kind = classify(sentence);
       if (!kind) continue;
-      out.push({ kind, text: tidyLine(sentence), group: p.topic.trim() || null, evidence: { quote: sentence, at: null } });
+      out.push({ kind, text: tidyLine(sentence), group: realTopic(p.topic), evidence: { quote: sentence, at: null } });
     }
   }
   return dedupeItems([], out).slice(0, MAX_ITEMS_PER_MEETING);

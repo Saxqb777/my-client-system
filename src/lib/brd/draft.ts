@@ -1,6 +1,7 @@
 import type { BrdItem, BrdLine, BrdSections } from "@/lib/db/schema";
 import { formatDate } from "@/lib/core/dates";
 import { cleanStyle } from "@/lib/core/style";
+import { realTopic } from "./extract";
 
 /**
  * The draft BRD: fixed sections, every requirement line linked to the items it came from. The rule based
@@ -81,7 +82,7 @@ const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 export function rulesDraft(input: DraftInput): BrdSections {
   const live = input.items.filter((i) => i.status !== "dropped");
   const pains = live.filter((i) => i.kind === "pain_point");
-  const groups = Array.from(new Set(live.map((i) => i.groupName).filter((g): g is string => Boolean(g))));
+  const groups = Array.from(new Set(live.map((i) => realTopic(i.groupName)).filter((g): g is string => Boolean(g))));
   const dates = input.meetings.map((m) => m.heldAt.getTime());
   const span = dates.length ? `${formatDate(new Date(Math.min(...dates)))} to ${formatDate(new Date(Math.max(...dates)))}` : "";
   const system = input.client.system?.trim() || "the new system";

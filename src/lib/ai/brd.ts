@@ -7,7 +7,7 @@ import { formatDate } from "@/lib/core/dates";
 import { clockToSeconds, quoteInTranscript } from "@/lib/meetings/evidence";
 import { transcriptForPrompt } from "@/lib/meetings/transcript";
 import { ensureAllItems, rulesDraft, type DraftInput } from "@/lib/brd/draft";
-import { MAX_ITEMS_PER_MEETING, dedupeItems, rulesExtract, rulesExtractMinutes, type ExtractedItem } from "@/lib/brd/extract";
+import { MAX_ITEMS_PER_MEETING, dedupeItems, realTopic, rulesExtract, rulesExtractMinutes, type ExtractedItem } from "@/lib/brd/extract";
 import { rulesGap } from "@/lib/brd/gap";
 import { AI_MODEL, FALLBACK_BETAS, aiEnabled, anthropic } from "./client";
 
@@ -93,7 +93,7 @@ async function claudeExtract(ctx: ExtractContext): Promise<ExtractedItem[] | nul
       return {
         kind: i.kind as BrdItemKind,
         text: cleanStyle(i.text.trim()).replace(/[.]+$/, ""),
-        group: i.group?.trim() ? cleanStyle(i.group.trim()) : null,
+        group: realTopic(i.group) ? cleanStyle(i.group!.trim()) : null,
         // A quote Claude could not copy verbatim is kept as context but without a time, so no link points at the wrong place.
         evidence: quote ? { quote, at: found && ctx.segments.length ? clockToSeconds(i.evidence?.at ?? null) : null } : null,
       };
